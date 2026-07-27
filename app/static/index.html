@@ -901,6 +901,190 @@
         border: 1px solid var(--success-border);
       }
 
+      @media (max-width: 768px) {
+        body {
+          overflow-x: hidden;
+        }
+
+        .app-container {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .sidebar {
+          width: 100%;
+          padding: 12px 16px;
+          border-right: 0;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand {
+          padding: 0 0 12px;
+        }
+
+        .nav-menu {
+          width: 100%;
+          margin-top: 12px;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .nav-item,
+        .nav-item a {
+          min-width: 0;
+        }
+
+        .nav-item a {
+          height: 100%;
+          padding: 8px 6px;
+          flex-direction: column;
+          justify-content: center;
+          gap: 4px;
+          text-align: center;
+          font-size: 0.75rem;
+          line-height: 1.2;
+        }
+
+        .nav-item a span:not(.nav-badge) {
+          overflow-wrap: anywhere;
+        }
+
+        .nav-badge,
+        .sidebar-footer {
+          display: none;
+        }
+
+        .main-content {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .top-header {
+          height: auto;
+          min-height: 64px;
+          padding: 12px 16px;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .page-heading {
+          width: 100%;
+          font-size: 1rem;
+        }
+
+        .header-actions {
+          width: 100%;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .header-actions button {
+          min-width: 0;
+          flex: 1 1 130px;
+          justify-content: center;
+          white-space: normal;
+        }
+
+        .workspace {
+          width: 100%;
+          max-width: none;
+          padding: 20px 16px;
+        }
+
+        .workspace-title {
+          font-size: 1.4rem;
+          overflow-wrap: anywhere;
+        }
+
+        .workspace-subtitle {
+          font-size: 0.9rem;
+        }
+
+        .steps-grid,
+        .cards-grid,
+        .skills-grid {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 16px;
+        }
+
+        .card,
+        .result-header-card,
+        .skills-block,
+        .queue-card {
+          min-width: 0;
+          padding: 16px;
+        }
+
+        .auth-gate-card {
+          width: 100%;
+          margin: 20px auto;
+          padding: 32px 16px;
+        }
+
+        .login-form-inline {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .login-form-inline input[type="password"] {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .btn-primary,
+        .btn-primary-sm {
+          max-width: 100%;
+          justify-content: center;
+          white-space: normal;
+          text-align: center;
+        }
+
+        .score-meta-bar,
+        .score-summary-group,
+        .queue-card-head {
+          min-width: 0;
+          flex-wrap: wrap;
+        }
+
+        .score-summary-group {
+          gap: 16px;
+        }
+
+        .routing-container {
+          min-width: 0;
+          flex: 1 1 140px;
+        }
+
+        .badge {
+          max-width: 100%;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+
+        .chip-list {
+          width: 100%;
+          min-width: 0;
+          flex-wrap: wrap;
+        }
+
+        .chip {
+          max-width: 100%;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        textarea,
+        .file-upload-box,
+        .growth-item,
+        .formatting-item {
+          min-width: 0;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+        }
+      }
+
       .hidden {
         display: none !important;
       }
