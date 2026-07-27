@@ -1,0 +1,22 @@
+Name: Jordan Lee
+
+Summary:
+Frontend-focused developer with 1.5 years of experience building
+responsive web interfaces.
+
+Skills:
+JavaScript, React, HTML, CSS, Figma, Basic Python, Git
+
+Experience:
+Junior Frontend Developer — PixelCraft Studio (2024 - Present)
+- Built responsive UI components using React
+- Collaborated with designers to implement UI from Figma mockups
+- Fixed cross-browser compatibility issues
+
+Intern — WebWorks Agency (2023 - 2024)
+- Assisted in building landing pages using HTML/CSS/JavaScript
+- Learned basic Python scripting for internal automation tasks
+
+Education:
+Bachelor of Arts in Digital Media
+Riverside College, 2023

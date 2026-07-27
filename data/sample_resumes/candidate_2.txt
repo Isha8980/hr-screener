@@ -1,0 +1,30 @@
+Name: Priya Sharma
+
+Summary:
+Backend software engineer with 6 years of experience designing and
+scaling production APIs and cloud infrastructure.
+
+Skills:
+Python, FastAPI, Django, PostgreSQL, Docker, Kubernetes, Redis, AWS,
+RESTful API Design, GraphQL, CI/CD, Unit Testing
+
+Experience:
+Senior Software Engineer — CloudScale Systems (2021 - Present)
+- Led backend development for a microservices platform using FastAPI
+  and Kubernetes
+- Migrated legacy services to AWS, improving uptime and reducing costs
+- Implemented Redis caching layer, cutting API response times by 40%
+- Designed GraphQL endpoints for internal dashboard tools
+
+Software Engineer — DataFlow Inc. (2018 - 2021)
+- Built RESTful APIs using Python and Django
+- Managed PostgreSQL database performance tuning and migrations
+- Containerized applications using Docker for consistent deployments
+
+Education:
+Bachelor of Technology in Computer Science
+Indian Institute of Technology, 2018
+
+Certifications:
+AWS Certified Solutions Architect - Associate
+Certified Kubernetes Administrator (CKA)

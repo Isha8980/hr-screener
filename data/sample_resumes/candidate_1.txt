@@ -1,0 +1,29 @@
+Name: Alex Johnson
+
+Summary:
+Backend-focused software engineer with 4 years of professional experience
+building and maintaining scalable web services and APIs.
+
+Skills:
+Python, FastAPI, PostgreSQL, Docker, Git, REST API Design, Unit Testing,
+Linux, CI/CD pipelines
+
+Experience:
+Software Engineer — Bright Labs Inc. (2022 - Present)
+- Built and maintained backend services using Python and FastAPI
+- Designed and optimized PostgreSQL database schemas for a high-traffic
+  application
+- Containerized services using Docker and deployed via CI/CD pipelines
+
+Junior Software Developer — Nova Tech Solutions (2020 - 2022)
+- Developed REST APIs for internal tools using Python
+- Collaborated with cross-functional teams to ship features on a biweekly
+  release cycle
+- Wrote unit and integration tests to maintain code quality
+
+Education:
+Bachelor of Science in Computer Science
+State University, 2020
+
+Certifications:
+AWS Certified Cloud Practitioner

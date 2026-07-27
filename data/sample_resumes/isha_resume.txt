@@ -1,0 +1,95 @@
+ISHA KHANNA
+Business Data Analyst
++918980040187 | ishak1402@gmail.com | LinkedIn
+Results-driven Business Data Analyst with hands-on experience in data science and analysis, reporting, and
+process automation within consulting and corporate environments. Combines solid roots in economics, Excel,
+and statistical modeling with advanced competencies in Python, Exploratory Data Analysis (EDA), and Power BI.
+Currently mastering AI, Machine Learning, and Generative AI (LLMs) frameworks at ISB, applying these
+technologies to optimise business operations. Proven track record of collaborating with senior stakeholders to
+build automated data pipelines and translate complex technical workflows into actionable business strategy.
+WORK EXPERIENCE
+Analyst - Shah Kailash & Associates India May 2025 - May 2026
+•
+Partnered with senior management to audit internal reporting data flows, rebuilding legacy Excel structures and
+data pipelines to accelerate operational output delivery.
+•
+Analysed complex internal operational and billing datasets to detect underlying performance anomalies,
+surfacing productivity patterns that directly informed management's resource allocation discussions.
+•
+Developed and maintained structured tracking templates and clean, standardized reporting formats, allowing
+non-technical partners to review key performance indicators (KPIs) at a glance.
+•
+Owned the data cleaning, verification, and deduplication processes for raw firm datasets, ensuring absolute
+structural accuracy before data was utilized in downstream planning cycles.
+•
+Translated raw, unstructured internal metrics into highly intuitive text and visual summaries, effectively bridging
+the gap between back-office data tracking and executive decision-making.
+Sales & Operations Assistant - Inditex, UK April 2024 - January 2025
+•
+Leveraged integrated RFID devices and specialized in-store databases to monitor daily stock levels, ensure data
+integrity, and minimize discrepancies in high-turnover product categories.
+•
+Analysed daily and weekly unit sales patterns on the floor, identifying demand anomalies and fast-moving trends
+to provide store management with actionable stock optimization suggestions.
+•
+Compiled and structured quantitative feedback regarding customer interactions and product movement,
+translating floor insights into operational recommendations for the visual merchandising team.
+•
+Collaborated with stockroom and logistics management to execute real-time replenishment schedules based on
+hourly high-traffic sales data inputs.
+EDUCATION
+MSc Business Analytics and Decision Sciences - University of Leeds, UK September 2022 - September 2023
+BA (Hons) in Economics – Pandit Deendayal Energy University, India July 2018 - May 2022
+PROFESSIONAL DEVELOPMENT
+AI In Business - Indian School of Business (ISB), Hyderabad March 2026 - Present
+•
+Studying practical applications of Artificial Intelligence (AI), Machine Learning (ML), and Deep Learning
+algorithms to optimize core business operations and financial pipelines.
+•
+Building specialized skills in GenAI for Python, prompt engineering, and Large Language Models (LLMs) to
+automate business workflows and cross-functional reporting.
+Participant - McKinsey.org Forward program April 2025 - July 2025
+•
+Developed structured problem-solving and KPI-driven decision-making using McKinsey frameworks, applied to
+real-world finance and business scenarios with cross-functional teams.
+PROJECTS
+AI-Powered HR Hiring Screener - Action Learning Project, ISB March 2026 - Present
+•
+•
+•
+Architected a pipeline in VS Code using Python to automate the parsing, screening, and ranking of massive
+candidate resume pools against complex job descriptions.
+Leveraged GenAI for Python and open-source Large Language Models (LLMs) to extract key candidate
+attributes, evaluate skill match metrics, and generate automated, unbiased candidate summary profiles.
+Conducted Exploratory Data Analysis (EDA) on recruitment pipeline historical data to identify hiring biases and
+pipeline bottlenecks. Designed an interactive Power BI dashboard for HR leadership to track screening
+throughput, model accuracy, and applicant funnel conversion metrics.
+Mental Models of Amazon Users in the UK and India March 2023 - September 2023
+•
+Conducted 40 qualitative stakeholder interviews across the UK and India to map complex user needs and
+behavioral frameworks.
+•
+Processed raw, unstructured audio data by utilising Neural Networks for automated speech-to-text transcription
+and speaker segmentation.
+•
+Cleaned the text matrices, coded user responses, and visualized multi-market behavioral insights in VS code to
+present findings clearly to non-technical leadership.
+Impact of Technological Innovation and R&D on Economic Growth December 2021 - May 2022
+•
+Built regression models in R and Excel examining investment vs. growth relationships; defined KPIs and
+produced structured reports with clear recommendations.
+SKILLS
+Data Analytics & AI: Exploratory Data Analysis (EDA), Machine Learning (ML), Deep Learning, Generative AI (Gen
+AI), Large Language Models (LLMs), GenAI for Python, Statistical Modeling.
+Tools & Frameworks: Python, Power BI, VS Code, SQL, R, Advanced Microsoft Excel.
+Finance & Operations: Financial Reporting, Budgeting & Planning, Finance Transformation, Business Process
+Re-engineering (BPR).
+Professional: Stakeholder Management, Communication, Structured Thinking, Cross-functional Collaboration.
+LEADERSHIP & EXTRACURRICULARS
+Team Leader - AIESEC, Ahmedabad, India January 2020 - December 2021
+•
+Led 10+ members on data-driven campaigns; tracked KPIs and increased participation by 20% by identifying
+gaps in outreach strategy.
+Global Volunteer - AIESEC, Vietnam December 2018 - February 2019
+•
+Managed cross-cultural stakeholder communication working with local NGOs on community initiatives.

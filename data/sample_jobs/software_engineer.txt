@@ -1,0 +1,22 @@
+Job Title: Senior Software Engineer - Backend
+Department / Job Family: Engineering
+
+About the Role:
+We are looking for a Senior Software Engineer with at least 5 years of experience building scalable backend services in Python. You will collaborate with cross-functional teams to design, implement, and maintain API services.
+
+Required Skills:
+- Python
+- FastAPI or Django
+- PostgreSQL or MySQL
+- RESTful API Design
+- Docker
+
+Preferred Skills:
+- Kubernetes
+- Redis
+- GraphQL
+- AWS / Cloud infrastructure
+
+Requirements & Qualifications:
+- 5 to 8 years of professional software development experience.
+- Bachelor's degree in Computer Science, Software Engineering, or related technical field.

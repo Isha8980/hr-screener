@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Screener.ai | SaaS HR Screener Dashboard</title>
+    <style>
+      :root, [data-theme="dark"] {
+        --bg-app: #0b0f19;
+        --bg-sidebar: #111827;
+        --bg-card: #1f2937;
+        --bg-card-subtle: #162032;
+        --bg-input: #0f172a;
+        --border-color: #374151;
+        --border-subtle: #1f2937;
+
+        --text-main: #f9fafb;
+        --text-muted: #9ca3af;
+        --text-subtle: #6b7280;
+
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --primary-soft: rgba(59, 130, 246, 0.15);
+
+        --success: #10b981;
+        --success-bg: rgba(16, 185, 129, 0.15);
+        --success-border: rgba(16, 185, 129, 0.3);
+
+        --warning: #f59e0b;
+        --warning-bg: rgba(245, 158, 11, 0.15);
+        --warning-border: rgba(245, 158, 11, 0.3);
+
+        --danger: #ef4444;
+        --danger-bg: rgba(239, 68, 68, 0.15);
+        --danger-border: rgba(239, 68, 68, 0.3);
+
+        --info: #38bdf8;
+        --info-bg: rgba(56, 189, 248, 0.15);
+        --info-border: rgba(56, 189, 248, 0.3);
+
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+      }
+
+      [data-theme="light"] {
+        --bg-app: #f3f4f6;
+        --bg-sidebar: #1e293b;
+        --bg-card: #ffffff;
+        --bg-card-subtle: #f8fafc;
+        --bg-input: #ffffff;
+        --border-color: #e5e7eb;
+        --border-subtle: #f1f5f9;
+
+        --text-main: #111827;
+        --text-muted: #4b5563;
+        --text-subtle: #9ca3af;
+
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --primary-soft: rgba(37, 99, 235, 0.1);
+
+        --success: #059669;
+        --success-bg: rgba(5, 150, 105, 0.1);
+        --success-border: rgba(5, 150, 105, 0.25);
+
+        --warning: #d97706;
+        --warning-bg: rgba(217, 119, 6, 0.1);
+        --warning-border: rgba(217, 119, 6, 0.25);
+
+        --danger: #dc2626;
+        --danger-bg: rgba(220, 38, 38, 0.1);
+        --danger-border: rgba(220, 38, 38, 0.25);
+
+        --info: #0284c7;
+        --info-bg: rgba(2, 132, 199, 0.1);
+        --info-border: rgba(2, 132, 199, 0.25);
+
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: var(--bg-app);
+        color: var(--text-main);
+        line-height: 1.5;
+        min-height: 100vh;
+        transition: background-color 0.25s ease, color 0.25s ease;
+      }
+
+      /* App Shell Layout */
+      .app-container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* Left Sidebar */
+      .sidebar {
+        width: 250px;
+        background-color: var(--bg-sidebar);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px 16px;
+        flex-shrink: 0;
+        color: #f8fafc;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 8px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .brand-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+      }
+
+      .brand-title {
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+      }
+
+      .brand-subtitle {
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+
+      .nav-menu {
+        list-style: none;
+        margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .nav-item a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        color: #94a3b8;
+        text-decoration: none;
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .nav-item.active a, .nav-item a:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+      }
+
+      .nav-badge {
+        margin-left: auto;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      .sidebar-footer {
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        background-color: var(--primary);
+        color: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+
+      .user-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #f8fafc;
+      }
+
+      .user-role {
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+
+      /* Main Content Wrapper */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+      }
+
+      /* Top Header */
+      .top-header {
+        height: 64px;
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--bg-card);
+      }
+
+      .page-heading {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      /* Theme Toggle Switch */
+      .theme-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--bg-app);
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 4px 12px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+      }
+
+      .theme-toggle:hover {
+        border-color: var(--primary);
+        color: var(--text-main);
+      }
+
+      /* Recruiter Login & Auth Gate */
+      .recruiter-login-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--primary-soft);
+        color: var(--primary);
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+      }
+
+      .recruiter-login-btn:hover {
+        background-color: var(--primary);
+        color: #ffffff;
+      }
+
+      .auth-gate-card {
+        text-align: center;
+        padding: 48px 24px;
+        max-width: 520px;
+        margin: 40px auto;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+      }
+
+      .lock-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+      }
+
+      .auth-gate-card h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-main);
+      }
+
+      .login-form-inline {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 24px;
+      }
+
+      .login-form-inline input[type="password"] {
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-input);
+        color: var(--text-main);
+        font-size: 0.9rem;
+        width: 220px;
+      }
+
+      .btn-primary-sm {
+        background-color: var(--primary);
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 10px 20px;
+        border-radius: var(--radius-sm);
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .btn-primary-sm:hover {
+        background-color: var(--primary-hover);
+      }
+
+      .error-msg-text {
+        color: var(--danger);
+        font-size: 0.85rem;
+        margin-top: 12px;
+        font-weight: 600;
+      }
+
+      .queue-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .queue-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .queue-candidate-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .queue-score {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--primary);
+      }
+
+      .queue-skills {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 6px;
+      }
+
+      .tab-view.hidden {
+        display: none !important;
+      }
+
+      .theme-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Workspace Container */
+      .workspace {
+        padding: 32px;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .workspace-intro {
+        margin-bottom: 24px;
+      }
+
+      .workspace-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: var(--text-main);
+      }
+
+      .workspace-subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      /* Cards Grid */
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-main);
+      }
+
+      .field {
+        margin-bottom: 16px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 140px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-input);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 0.9rem;
+        resize: vertical;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+
+      /* File Upload Zone */
+      .file-upload-box {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        text-align: center;
+        background-color: var(--bg-card-subtle);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .file-upload-box:hover, .file-upload-box.drag-over {
+        border-color: var(--primary);
+        background-color: var(--primary-soft);
+      }
+
+      .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .file-upload-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .upload-icon {
+        width: 32px;
+        height: 32px;
+        color: var(--primary);
+      }
+
+      .file-name-text {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .file-name-text.active {
+        color: var(--success);
+        font-weight: 600;
+      }
+
+      .or-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: var(--text-subtle);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        margin: 16px 0;
+      }
+
+      .or-divider::before, .or-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .or-divider span {
+        padding: 0 10px;
+      }
+
+      /* Action Button & Loading */
+      .action-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+
+      .btn-primary {
+        background-color: var(--primary);
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 14px 32px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .loading-box {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--primary-soft);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Results Dashboard */
+      .result-dashboard {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .result-header-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 24px;
+      }
+
+      .score-meta-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 24px;
+      }
+
+      .score-summary-group {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      /* Circular Match Score Ring */
+      .score-ring-container {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .progress-ring {
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring__bg {
+        stroke: var(--border-color);
+      }
+
+      .progress-ring__circle {
+        transition: stroke-dashoffset 0.8s ease-in-out, stroke 0.3s ease;
+      }
+
+      .score-number-box {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+
+      .score-number {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      .score-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        margin-top: 2px;
+      }
+
+      .routing-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .meta-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      /* Routing Badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        width: fit-content;
+      }
+
+      .badge-auto_ranked {
+        background-color: var(--success-bg);
+        color: var(--success);
+        border: 1px solid var(--success-border);
+      }
+
+      .badge-needs_review {
+        background-color: var(--warning-bg);
+        color: var(--warning);
+        border: 1px solid var(--warning-border);
+      }
+
+      .badge-flagged_for_bias {
+        background-color: var(--danger-bg);
+        color: var(--danger);
+        border: 1px solid var(--danger-border);
+      }
+
+      /* Skills Sections */
+      .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .skills-block {
+        background-color: var(--bg-card-subtle);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 16px;
+      }
+
+      .skills-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .skills-title.matched { color: var(--success); }
+      .skills-title.missing { color: var(--danger); }
+
+      .chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        list-style: none;
+      }
+
+      .chip {
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .chip-matched {
+        background-color: var(--success-bg);
+        color: var(--success);
+        border: 1px solid var(--success-border);
+      }
+
+      .chip-missing {
+        background-color: var(--danger-bg);
+        color: var(--danger);
+        border: 1px solid var(--danger-border);
+      }
+
+      .chip-empty {
+        background-color: var(--bg-app);
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+        font-weight: 400;
+      }
+
+      /* Subcards Grid */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+      }
+
+      .section-card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .card-body-p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        white-space: pre-line;
+      }
+
+      .growth-box {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .growth-item {
+        background-color: var(--bg-card-subtle);
+        border: 1px solid var(--border-subtle);
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+      }
+
+      .growth-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--warning);
+        margin-bottom: 4px;
+      }
+
+      .growth-desc {
+        font-size: 0.88rem;
+        color: var(--text-main);
+      }
+
+      /* ATS formatting box */
+      .formatting-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .formatting-item {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        line-height: 1.4;
+      }
+
+      .formatting-item.issue {
+        background-color: var(--warning-bg);
+        color: var(--warning);
+        border: 1px solid var(--warning-border);
+      }
+
+      .formatting-item.suggestion {
+        background-color: var(--info-bg);
+        color: var(--info);
+        border: 1px solid var(--info-border);
+      }
+
+      .formatting-item.ok {
+        background-color: var(--success-bg);
+        color: var(--success);
+        border: 1px solid var(--success-border);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-container">
+      <!-- Left Sidebar Navigation -->
+      <aside class="sidebar">
+        <div>
+          <div class="brand">
+            <div class="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <polyline points="16 11 18 13 22 9"></polyline>
+              </svg>
+            </div>
+            <div>
+              <div class="brand-title">Screener.ai</div>
+              <div class="brand-subtitle">HR Intelligence Platform</div>
+            </div>
+          </div>
+
+          <ul class="nav-menu">
+            <li class="nav-item active" id="navScreener">
+              <a href="#" onclick="switchTab('screener'); return false;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                  <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                </svg>
+                <span>Candidate Screener</span>
+              </a>
+            </li>
+            <li class="nav-item" id="navQueue">
+              <a href="#" onclick="switchTab('queue'); return false;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Review Queue</span>
+                <span class="nav-badge">Live</span>
+              </a>
+            </li>
+            <li class="nav-item" id="navSettings">
+              <a href="#" onclick="switchTab('settings'); return false;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Settings</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="user-avatar">HR</div>
+          <div>
+            <div class="user-name">Talent Acquisition</div>
+            <div class="user-role">Recruiter Portal</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <div class="main-content">
+        <header class="top-header">
+          <div class="page-heading">AI Screening Workspace</div>
+          <div class="header-actions">
+            <button id="recruiterBtn" class="recruiter-login-btn" type="button">
+              <span id="recruiterStatusIcon">🔑</span>
+              <span id="recruiterStatusText">Recruiter Login</span>
+            </button>
+            <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+              <span id="themeIcon" class="theme-icon">🌙</span>
+              <span id="themeLabel">Dark Mode</span>
+            </button>
+          </div>
+        </header>
+
+        <main class="workspace">
+          <!-- Candidate Screener View -->
+          <div id="screenerView" class="tab-view">
+            <div class="workspace-intro">
+              <h1 class="workspace-title">Candidate Screener &amp; Matcher</h1>
+              <p class="workspace-subtitle">Evaluate job requirements against candidate resumes using automated AI matching.</p>
+            </div>
+
+          <!-- Inputs Grid: Step 1 & Step 2 -->
+          <div class="steps-grid">
+            <!-- Step 1 Card -->
+            <div class="card">
+              <div class="card-header">
+                <div class="step-num">1</div>
+                <h2 class="card-title">Job Description</h2>
+              </div>
+              <div class="field">
+                <label for="jobText">Paste Job Requirements</label>
+                <textarea id="jobText" placeholder="Paste full job description, qualifications, and required skills here..."></textarea>
+              </div>
+            </div>
+
+            <!-- Step 2 Card -->
+            <div class="card">
+              <div class="card-header">
+                <div class="step-num">2</div>
+                <h2 class="card-title">Upload Resume</h2>
+              </div>
+              <div class="field">
+                <label>Select Candidate Resume File (.pdf or .txt)</label>
+                <div class="file-upload-box" id="uploadZone">
+                  <input id="resumeFile" type="file" accept=".pdf,.txt" class="file-input" />
+                  <div class="file-upload-label">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span id="fileNameDisplay" class="file-name-text">Click or drag &amp; drop PDF/TXT file here</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="or-divider">
+                <span>OR PASTE TEXT INSTEAD</span>
+              </div>
+
+              <div class="field">
+                <label for="resumeText">Resume Raw Text</label>
+                <textarea id="resumeText" placeholder="Or paste candidate resume text directly here..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Button & Loading -->
+          <div class="action-section">
+            <button id="analyzeBtn" class="btn-primary" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>Analyze Candidate</span>
+            </button>
+            <div id="loading" class="loading-box">
+              <div class="spinner"></div>
+              <span>Analyzing candidate against job description...</span>
+            </div>
+          </div>
+
+          <!-- Results Section Dashboard -->
+          <section id="resultCard" class="result-dashboard">
+            <div class="result-header-card">
+              <div class="score-meta-bar">
+                <div class="score-summary-group">
+                  <!-- Circular Donut Score Ring -->
+                  <div class="score-ring-container">
+                    <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
+                      <circle class="progress-ring__bg" cx="50" cy="50" r="42" stroke-width="8" fill="transparent"></circle>
+                      <circle class="progress-ring__circle" id="scoreRing" cx="50" cy="50" r="42" stroke-width="8" fill="transparent" stroke-dasharray="263.89" stroke-dashoffset="263.89" stroke-linecap="round"></circle>
+                    </svg>
+                    <div class="score-number-box">
+                      <span id="score" class="score-number">0</span>
+                      <span class="score-label">MATCH %</span>
+                    </div>
+                  </div>
+
+                  <div class="routing-container">
+                    <div class="meta-title">Routing Decision</div>
+                    <div>
+                      <span id="routingBadge" class="badge">pending</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Skills Grid -->
+              <div class="skills-grid">
+                <div class="skills-block">
+                  <div class="skills-title matched">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Matched Skills
+                  </div>
+                  <ul id="matchedSkills" class="chip-list"></ul>
+                </div>
+
+                <div class="skills-block">
+                  <div class="skills-title missing">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Missing Skills
+                  </div>
+                  <ul id="missingSkills" class="chip-list"></ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detailed Cards Grid -->
+            <div class="cards-grid">
+              <!-- AI Rationale Explanation Card -->
+              <div class="card">
+                <div class="section-card-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>AI Evaluation Rationale</span>
+                </div>
+                <p id="explanationText" class="card-body-p"></p>
+              </div>
+
+              <!-- Growth Recommendation Card -->
+              <div id="growthSection" class="card hidden">
+                <div class="section-card-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  <span>Growth &amp; Upskilling Recommendation</span>
+                </div>
+                <div class="growth-box">
+                  <div class="growth-item">
+                    <div class="growth-label">Suggested Project</div>
+                    <div id="growthProjectText" class="growth-desc"></div>
+                  </div>
+                  <div class="growth-item">
+                    <div class="growth-label">Resume Optimization Tip</div>
+                    <div id="growthTipText" class="growth-desc"></div>
+                  </div>
+                  <p id="growthText" class="hidden"></p>
+                </div>
+              </div>
+
+              <!-- Resume Formatting Check Card -->
+              <div id="formattingSection" class="card hidden">
+                <div class="section-card-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span>Resume Formatting &amp; ATS Check</span>
+                </div>
+                <div id="formattingContent"></div>
+              </div>
+            </div>
+          </section>
+          </div>
+
+          <!-- Review Queue View -->
+          <div id="queueView" class="tab-view hidden">
+            <div id="queueAuthGate" class="auth-gate-card">
+              <div class="lock-icon">🔒</div>
+              <h2>Recruiter Login Required</h2>
+              <p class="muted">Recruiter login required to view this page and access candidate review queue data.</p>
+              <form id="queueLoginForm" class="login-form-inline">
+                <input type="password" id="queuePasswordInput" placeholder="Enter recruiter password" required />
+                <button type="submit" class="btn-primary-sm">Login</button>
+              </form>
+              <div id="queueLoginError" class="error-msg-text hidden">Invalid password. Please try again.</div>
+            </div>
+
+            <div id="queueContent" class="hidden">
+              <div class="workspace-intro">
+                <h1 class="workspace-title">Candidate Review Queue</h1>
+                <p class="workspace-subtitle">Candidates requiring manual human review or flagged for bias inspection.</p>
+              </div>
+              <div id="queueListContainer">
+                <!-- Dynamically populated when logged in -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings View -->
+          <div id="settingsView" class="tab-view hidden">
+            <div class="auth-gate-card">
+              <div class="lock-icon">⚙️</div>
+              <h2>Settings — Not Yet Implemented</h2>
+              <p class="muted">This section is planned for a future update. Configuration such as recruiter password management and scoring thresholds will be available here.</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      // Theme Toggle Logic
+      const themeToggleBtn = document.getElementById('themeToggle');
+      const themeIcon = document.getElementById('themeIcon');
+      const themeLabel = document.getElementById('themeLabel');
+
+      function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('screener_theme', theme);
+        if (theme === 'dark') {
+          themeIcon.textContent = '🌙';
+          themeLabel.textContent = 'Dark Mode';
+        } else {
+          themeIcon.textContent = '☀️';
+          themeLabel.textContent = 'Light Mode';
+        }
+      }
+
+      // Initialize saved theme or default to dark
+      const savedTheme = localStorage.getItem('screener_theme') || 'dark';
+      setTheme(savedTheme);
+
+      themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(nextTheme);
+      });
+
+      // File Input and Drag & Drop Listener
+      const resumeFileInput = document.getElementById('resumeFile');
+      const uploadZone = document.getElementById('uploadZone');
+      const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+      resumeFileInput.addEventListener('change', () => {
+        if (resumeFileInput.files && resumeFileInput.files[0]) {
+          const file = resumeFileInput.files[0];
+          const kb = (file.size / 1024).toFixed(1);
+          fileNameDisplay.textContent = `Attached: ${file.name} (${kb} KB)`;
+          fileNameDisplay.classList.add('active');
+        } else {
+          fileNameDisplay.textContent = 'Click or drag & drop PDF/TXT file here';
+          fileNameDisplay.classList.remove('active');
+        }
+      });
+
+      if (uploadZone) {
+        ['dragenter', 'dragover'].forEach(evt => {
+          uploadZone.addEventListener(evt, (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+          });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+          uploadZone.addEventListener(evt, (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+          });
+        });
+        uploadZone.addEventListener('drop', (e) => {
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+            resumeFileInput.files = e.dataTransfer.files;
+            resumeFileInput.dispatchEvent(new Event('change'));
+          }
+        });
+      }
+
+      // Main Elements
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const loading = document.getElementById('loading');
+      const resultCard = document.getElementById('resultCard');
+      const scoreEl = document.getElementById('score');
+      const scoreRing = document.getElementById('scoreRing');
+      const routingBadge = document.getElementById('routingBadge');
+      const matchedSkillsEl = document.getElementById('matchedSkills');
+      const missingSkillsEl = document.getElementById('missingSkills');
+      const explanationTextEl = document.getElementById('explanationText');
+      const growthSection = document.getElementById('growthSection');
+      const growthProjectText = document.getElementById('growthProjectText');
+      const growthTipText = document.getElementById('growthTipText');
+      const growthTextEl = document.getElementById('growthText');
+      const formattingSection = document.getElementById('formattingSection');
+      const formattingContent = document.getElementById('formattingContent');
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      analyzeBtn.addEventListener('click', async () => {
+        const jobText = document.getElementById('jobText').value.trim();
+        const resumeText = document.getElementById('resumeText').value.trim();
+        const selectedFile = resumeFileInput.files && resumeFileInput.files[0];
+
+        if (!jobText) {
+          alert('Please provide a job description.');
+          return;
+        }
+
+        let candidateId = null;
+        let candidatePayload = null;
+
+        analyzeBtn.disabled = true;
+        loading.style.display = 'flex';
+        resultCard.style.display = 'none';
+
+        try {
+          // 1. Post Job
+          const jobResponse = await fetch('/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: jobText })
+          });
+          const jobData = await jobResponse.json();
+          if (!jobResponse.ok) {
+            throw new Error(jobData.detail || 'Failed to create job');
+          }
+
+          // 2. Post Candidate File or Text
+          if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            const candidateResponse = await fetch('/candidates/upload', {
+              method: 'POST',
+              body: formData
+            });
+            candidatePayload = await candidateResponse.json();
+            if (!candidateResponse.ok) {
+              throw new Error(candidatePayload.detail || 'Failed to upload resume');
+            }
+            candidateId = candidatePayload.candidate_id;
+          } else {
+            if (!resumeText) {
+              alert('Please provide a resume text or upload a .pdf/.txt file.');
+              return;
+            }
+            const candidateResponse = await fetch('/candidates', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: resumeText })
+            });
+            candidatePayload = await candidateResponse.json();
+            if (!candidateResponse.ok) {
+              throw new Error(candidatePayload.detail || 'Failed to create candidate');
+            }
+            candidateId = candidatePayload.candidate_id;
+          }
+
+          // 3. Evaluate Candidate
+          const evaluateResponse = await fetch('/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              job_id: jobData.job_id,
+              candidate_id: candidateId
+            })
+          });
+          const evaluationData = await evaluateResponse.json();
+          if (!evaluateResponse.ok) {
+            throw new Error(evaluationData.detail || 'Evaluation failed');
+          }
+
+          const match = evaluationData.match_result || {};
+          const explanation = evaluationData.explanation?.rationale_text || 'No explanation available.';
+          const routing = evaluationData.routing_decision || 'needs_review';
+          const growth = evaluationData.growth_recommendation;
+          const ats = evaluationData.resume_formatting_check;
+
+          // Render Match Score Circular Donut Ring
+          const scoreVal = Math.min(100, Math.max(0, Math.round(match.match_score || 0)));
+          scoreEl.textContent = scoreVal;
+
+          // Ring Circumference: 2 * PI * 42 = 263.89
+          const circumference = 263.89;
+          const offset = circumference - (scoreVal / 100) * circumference;
+          scoreRing.style.strokeDashoffset = offset;
+
+          // Score Ring Color Logic: Green >= 70, Yellow 40-69, Red < 40
+          let ringColor = 'var(--danger)';
+          if (scoreVal >= 70) {
+            ringColor = 'var(--success)';
+          } else if (scoreVal >= 40) {
+            ringColor = 'var(--warning)';
+          }
+          scoreRing.style.stroke = ringColor;
+          scoreEl.style.color = ringColor;
+
+          // Render Routing Decision Badge
+          const routingFormatted = routing.replace(/_/g, ' ').toUpperCase();
+          routingBadge.textContent = routingFormatted;
+          routingBadge.className = `badge badge-${routing}`;
+
+          // Render Matched Skills
+          matchedSkillsEl.innerHTML = '';
+          const matchedSkillsArr = match.matched_skills || [];
+          if (matchedSkillsArr.length > 0) {
+            matchedSkillsArr.forEach((skill) => {
+              const li = document.createElement('li');
+              li.className = 'chip chip-matched';
+              li.textContent = skill;
+              matchedSkillsEl.appendChild(li);
+            });
+          } else {
+            const li = document.createElement('li');
+            li.className = 'chip chip-empty';
+            li.textContent = 'None identified';
+            matchedSkillsEl.appendChild(li);
+          }
+
+          // Render Missing Skills
+          missingSkillsEl.innerHTML = '';
+          const missingSkillsArr = match.missing_skills || [];
+          if (missingSkillsArr.length > 0) {
+            missingSkillsArr.forEach((skill) => {
+              const li = document.createElement('li');
+              li.className = 'chip chip-missing';
+              li.textContent = skill;
+              missingSkillsEl.appendChild(li);
+            });
+          } else {
+            const li = document.createElement('li');
+            li.className = 'chip chip-empty';
+            li.textContent = 'None missing';
+            missingSkillsEl.appendChild(li);
+          }
+
+          // Render AI Rationale Explanation
+          explanationTextEl.textContent = explanation;
+
+          // Render Growth Recommendation Card
+          if (growth && (growth.suggested_project || growth.resume_tip)) {
+            growthSection.classList.remove('hidden');
+            if (growthProjectText) growthProjectText.textContent = growth.suggested_project || 'None suggested.';
+            if (growthTipText) growthTipText.textContent = growth.resume_tip || 'None suggested.';
+            if (growthTextEl) growthTextEl.textContent = `${growth.suggested_project || ''}\nResume tip: ${growth.resume_tip || ''}`.trim();
+          } else {
+            growthSection.classList.add('hidden');
+            if (growthTextEl) growthTextEl.textContent = '';
+          }
+
+          // Render Resume Formatting Check Card
+          if (ats) {
+            formattingSection.classList.remove('hidden');
+            const issues = ats.issues || [];
+            const suggestions = ats.suggestions || [];
+
+            if (issues.length === 0 && suggestions.length === 0) {
+              formattingContent.innerHTML = `
+                <ul class="formatting-list">
+                  <li class="formatting-item ok">
+                    <span>✅</span>
+                    <span>No formatting issues detected. The resume structure is easily readable by ATS parsers.</span>
+                  </li>
+                </ul>
+              `;
+            } else {
+              let html = '<ul class="formatting-list">';
+              issues.forEach(issue => {
+                html += `<li class="formatting-item issue"><span>⚠️ Issue:</span> <span>${escapeHtml(issue)}</span></li>`;
+              });
+              suggestions.forEach(sug => {
+                html += `<li class="formatting-item suggestion"><span>💡 Tip:</span> <span>${escapeHtml(sug)}</span></li>`;
+              });
+              html += '</ul>';
+              formattingContent.innerHTML = html;
+            }
+          } else {
+            formattingSection.classList.add('hidden');
+          }
+
+          resultCard.style.display = 'block';
+        } catch (error) {
+          alert(error.message || 'Analysis failed');
+        } finally {
+          analyzeBtn.disabled = false;
+          loading.style.display = 'none';
+        }
+      });
+
+      // In-memory recruiter session token (not stored in localStorage)
+      let recruiterToken = null;
+
+      // Tab Switcher
+      function switchTab(tabName) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+
+        if (tabName === 'screener') {
+          document.getElementById('navScreener').classList.add('active');
+          document.getElementById('screenerView').classList.remove('hidden');
+        } else if (tabName === 'queue') {
+          document.getElementById('navQueue').classList.add('active');
+          document.getElementById('queueView').classList.remove('hidden');
+          if (recruiterToken) {
+            loadQueue();
+          } else {
+            document.getElementById('queueAuthGate').classList.remove('hidden');
+            document.getElementById('queueContent').classList.add('hidden');
+          }
+        } else if (tabName === 'settings') {
+          document.getElementById('navSettings').classList.add('active');
+          document.getElementById('settingsView').classList.remove('hidden');
+        }
+      }
+
+      // Recruiter Login Handler
+      const queueLoginForm = document.getElementById('queueLoginForm');
+      const queuePasswordInput = document.getElementById('queuePasswordInput');
+      const queueLoginError = document.getElementById('queueLoginError');
+      const recruiterBtn = document.getElementById('recruiterBtn');
+      const recruiterStatusIcon = document.getElementById('recruiterStatusIcon');
+      const recruiterStatusText = document.getElementById('recruiterStatusText');
+
+      if (queueLoginForm) {
+        queueLoginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          queueLoginError.classList.add('hidden');
+
+          try {
+            const res = await fetch('/recruiter/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password: queuePasswordInput.value })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+              throw new Error(data.detail || 'Invalid recruiter password.');
+            }
+
+            recruiterToken = data.token;
+            recruiterStatusIcon.textContent = '✅';
+            recruiterStatusText.textContent = 'Recruiter Logged In';
+            queuePasswordInput.value = '';
+
+            loadQueue();
+          } catch (err) {
+            queueLoginError.textContent = err.message || 'Invalid password.';
+            queueLoginError.classList.remove('hidden');
+          }
+        });
+      }
+
+      if (recruiterBtn) {
+        recruiterBtn.addEventListener('click', () => {
+          if (recruiterToken) {
+            if (confirm('You are currently logged in as Recruiter. Do you want to log out?')) {
+              recruiterToken = null;
+              recruiterStatusIcon.textContent = '🔑';
+              recruiterStatusText.textContent = 'Recruiter Login';
+              switchTab('screener');
+            }
+          } else {
+            switchTab('queue');
+            if (queuePasswordInput) queuePasswordInput.focus();
+          }
+        });
+      }
+
+      async function loadQueue() {
+        if (!recruiterToken) {
+          document.getElementById('queueAuthGate').classList.remove('hidden');
+          document.getElementById('queueContent').classList.add('hidden');
+          return;
+        }
+
+        document.getElementById('queueAuthGate').classList.add('hidden');
+        document.getElementById('queueContent').classList.remove('hidden');
+
+        const container = document.getElementById('queueListContainer');
+        container.innerHTML = '<div class="loading-box" style="display:flex;"><div class="spinner"></div><span>Loading queue data...</span></div>';
+
+        try {
+          const res = await fetch('/queue', {
+            headers: { 'X-Recruiter-Token': recruiterToken }
+          });
+
+          if (res.status === 401) {
+            recruiterToken = null;
+            recruiterStatusIcon.textContent = '🔑';
+            recruiterStatusText.textContent = 'Recruiter Login';
+            document.getElementById('queueAuthGate').classList.remove('hidden');
+            document.getElementById('queueContent').classList.add('hidden');
+            return;
+          }
+
+          const data = await res.json();
+          if (!data || data.length === 0) {
+            container.innerHTML = '<div class="card"><p class="muted" style="text-align:center;">No candidates currently in review queue.</p></div>';
+            return;
+          }
+
+          let html = '';
+          data.forEach(item => {
+            const match = item.result?.match_result || {};
+            const score = Math.round(match.match_score || 0);
+            const status = item.status || 'needs_review';
+            const statusLabel = status.replace(/_/g, ' ').toUpperCase();
+
+            html += `
+              <div class="queue-card">
+                <div class="queue-card-head">
+                  <div>
+                    <h3 class="queue-candidate-name">${escapeHtml(item.candidate_name || ('Candidate #' + item.candidate_id))}</h3>
+                    <span class="badge badge-${status}" style="margin-top:4px;">${statusLabel}</span>
+                  </div>
+                  <div class="queue-score">${score}% Match</div>
+                </div>
+                <div class="queue-skills"><strong>Matched Skills:</strong> ${(match.matched_skills || []).join(', ') || 'None'}</div>
+                <div class="queue-skills"><strong>Missing Skills:</strong> ${(match.missing_skills || []).join(', ') || 'None'}</div>
+              </div>
+            `;
+          });
+          container.innerHTML = html;
+        } catch (err) {
+          container.innerHTML = `<div class="error-msg-text">Failed to load queue: ${escapeHtml(err.message)}</div>`;
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+Name: Sam Okafor
+
+Summary:
+Software developer with 2 years of professional experience, strong in
+backend fundamentals, currently expanding into cloud infrastructure.
+
+Skills:
+Python, FastAPI, PostgreSQL, Git, Docker (basic), Linux, REST APIs
+
+Experience:
+Software Developer — BrightPath Tech (2023 - Present)
+- Built and maintained internal REST APIs using Python and FastAPI
+- Wrote SQL queries and basic schema design in PostgreSQL
+- Assisted senior engineers with Docker containerization tasks
+
+Education:
+Bachelor of Science in Information Technology
+Lakeside University, 2023

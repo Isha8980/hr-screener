@@ -1,0 +1,5 @@
+Job Title: Software Engineer - Backend
+Required Skills: Python, FastAPI, PostgreSQL, RESTful API Design, Docker
+Preferred Skills: Kubernetes, Redis, GraphQL, AWS
+Experience Required: 2-3 years
+Education: Bachelor's degree in Computer Science or related field
