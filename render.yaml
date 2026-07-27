@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: hr-screener
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.dashboard:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: RECRUITER_PASSWORD
+        sync: false

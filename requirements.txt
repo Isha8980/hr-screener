@@ -4,4 +4,4 @@ pydantic
 fastapi
 uvicorn
 pypdf
-
+python-multipart
