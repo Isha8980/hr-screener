@@ -13,6 +13,9 @@ def client():
 
 
 def test_dashboard_routes_with_mocked_openai(monkeypatch, client):
+    monkeypatch.setenv("RECRUITER_PASSWORD", "test-password-123")
+    monkeypatch.setattr("app.dashboard.RECRUITER_PASSWORD", "test-password-123")
+
     class DummyOpenAI:
         def __init__(self, api_key):
             self.api_key = api_key
@@ -130,7 +133,7 @@ def test_dashboard_routes_with_mocked_openai(monkeypatch, client):
     assert evaluate_response.json()["routing_decision"] == "needs_review"
     assert evaluate_response.json()["growth_recommendation"]["suggested_project"]
 
-    login_response = client.post("/recruiter/login", json={"password": "changeme"})
+    login_response = client.post("/recruiter/login", json={"password": "test-password-123"})
     assert login_response.status_code == 200
     token = login_response.json()["token"]
 
@@ -159,11 +162,14 @@ def test_queue_returns_401_without_valid_token(client):
     assert res_bad_token.status_code == 401
 
 
-def test_recruiter_login_and_queue_access(client):
+def test_recruiter_login_and_queue_access(monkeypatch, client):
+    monkeypatch.setenv("RECRUITER_PASSWORD", "test-password-123")
+    monkeypatch.setattr("app.dashboard.RECRUITER_PASSWORD", "test-password-123")
+
     res_invalid_pwd = client.post("/recruiter/login", json={"password": "wrong-password"})
     assert res_invalid_pwd.status_code == 401
 
-    res_valid_pwd = client.post("/recruiter/login", json={"password": "changeme"})
+    res_valid_pwd = client.post("/recruiter/login", json={"password": "test-password-123"})
     assert res_valid_pwd.status_code == 200
     token = res_valid_pwd.json()["token"]
     assert token
@@ -171,4 +177,3 @@ def test_recruiter_login_and_queue_access(client):
     res_queue = client.get("/queue", headers={"X-Recruiter-Token": token})
     assert res_queue.status_code == 200
     assert isinstance(res_queue.json(), list)
-

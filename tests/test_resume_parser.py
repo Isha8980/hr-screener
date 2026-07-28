@@ -44,7 +44,29 @@ def test_parse_resume_success(mock_openai, sample_resume_text):
     assert "FastAPI" in profile.skills
     assert profile.experience_years == 2.0
     assert profile.certifications == []
-    assert profile.raw_resume_text == sample_resume_text
+    assert profile.raw_resume_text == sample_resume_text.strip()
+
+
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.resume_parser.OpenAI")
+def test_parse_resume_overwrites_model_raw_text_with_original_input(mock_openai):
+    original_text = "  Name\n\t• Built an ATS parser\n- Preserved whitespace  \n"
+    model_profile = CandidateProfile(
+        name="Candidate",
+        skills=["Python"],
+        experience_years=1.0,
+        education="Not specified",
+        certifications=[],
+        raw_resume_text="Model-generated normalized resume text",
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = model_profile
+    mock_openai.return_value.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+
+    profile = parse_resume(original_text)
+
+    assert profile.raw_resume_text == original_text.strip()
 
 
 def test_parse_resume_empty_text():

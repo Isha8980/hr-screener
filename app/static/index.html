@@ -866,6 +866,40 @@
       }
 
       /* ATS formatting box */
+      .ats-score-summary {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 0 16px;
+      }
+
+      .ats-score-ring {
+        width: 82px;
+        height: 82px;
+        flex-shrink: 0;
+      }
+
+      .ats-score-ring .score-number {
+        font-size: 1.35rem;
+      }
+
+      .ats-score-copy {
+        min-width: 0;
+      }
+
+      .ats-score-title {
+        color: var(--text-main);
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .ats-score-note {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        line-height: 1.4;
+        margin-top: 4px;
+      }
+
       .formatting-list {
         list-style: none;
         display: flex;
@@ -1629,9 +1663,37 @@
             formattingSection.classList.remove('hidden');
             const issues = ats.issues || [];
             const suggestions = ats.suggestions || [];
+            const readabilityScore = Math.min(100, Math.max(0, Math.round(Number(ats.readability_score) || 0)));
+            const atsCircumference = 188.5;
+            const atsOffset = atsCircumference - (readabilityScore / 100) * atsCircumference;
+            let atsScoreColor = 'var(--danger)';
+            if (readabilityScore >= 80) {
+              atsScoreColor = 'var(--success)';
+            } else if (readabilityScore >= 50) {
+              atsScoreColor = 'var(--warning)';
+            }
+
+            const scoreHtml = `
+              <div class="ats-score-summary">
+                <div class="score-ring-container ats-score-ring" aria-label="ATS compatibility score: ${readabilityScore} out of 100">
+                  <svg class="progress-ring" width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                    <circle class="progress-ring__bg" cx="38" cy="38" r="30" stroke-width="7" fill="transparent"></circle>
+                    <circle class="progress-ring__circle" cx="38" cy="38" r="30" stroke-width="7" fill="transparent" stroke-dasharray="${atsCircumference}" stroke-dashoffset="${atsOffset}" stroke-linecap="round" style="stroke: ${atsScoreColor}"></circle>
+                  </svg>
+                  <div class="score-number-box">
+                    <span class="score-number" style="color: ${atsScoreColor}">${readabilityScore}</span>
+                    <span class="score-label">/ 100</span>
+                  </div>
+                </div>
+                <div class="ats-score-copy">
+                  <div class="ats-score-title">ATS Compatibility Score: ${readabilityScore}/100</div>
+                  <p class="ats-score-note">Heuristic formatting check -- not a standardized industry ATS score.</p>
+                </div>
+              </div>
+            `;
 
             if (issues.length === 0 && suggestions.length === 0) {
-              formattingContent.innerHTML = `
+              formattingContent.innerHTML = scoreHtml + `
                 <ul class="formatting-list">
                   <li class="formatting-item ok">
                     <span>✅</span>
@@ -1648,7 +1710,7 @@
                 html += `<li class="formatting-item suggestion"><span>💡 Tip:</span> <span>${escapeHtml(sug)}</span></li>`;
               });
               html += '</ul>';
-              formattingContent.innerHTML = html;
+              formattingContent.innerHTML = scoreHtml + html;
             }
           } else {
             formattingSection.classList.add('hidden');

@@ -82,8 +82,7 @@ def parse_resume(text: str) -> CandidateProfile:
             if parsed_profile is None:
                 raise ValueError("OpenAI structured output returned None.")
 
-            if not parsed_profile.raw_resume_text:
-                parsed_profile.raw_resume_text = text.strip()
+            parsed_profile.raw_resume_text = text.strip()
 
             return parsed_profile
 
@@ -102,8 +101,7 @@ def parse_resume(text: str) -> CandidateProfile:
                 raise ValueError("OpenAI API returned an empty response.")
 
             profile = CandidateProfile.model_validate_json(content)
-            if not profile.raw_resume_text:
-                profile.raw_resume_text = text.strip()
+            profile.raw_resume_text = text.strip()
             return profile
 
     except ValidationError as ve:
@@ -114,4 +112,3 @@ def parse_resume(text: str) -> CandidateProfile:
         if isinstance(e, RuntimeError):
             raise
         raise RuntimeError(f"An unexpected error occurred while parsing resume: {e}") from e
-
