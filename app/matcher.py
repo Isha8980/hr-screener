@@ -7,13 +7,29 @@ import re
 from app.schemas import CandidateProfile, JobRequirements, MatchResult
 
 
+_SKILL_ABBREVIATIONS = {
+    "ms": "microsoft",
+    "ppt": "powerpoint",
+    "bi": "business intelligence",
+}
+
+
 def _normalize_skill(skill: str) -> str:
-    """Normalize skill string for case-insensitive comparison."""
-    return skill.strip().lower()
+    """Normalize casing and a conservative set of unambiguous skill abbreviations."""
+    normalized = skill.strip().lower()
+    for abbreviation, expanded in _SKILL_ABBREVIATIONS.items():
+        normalized = re.sub(rf"\b{re.escape(abbreviation)}\b", expanded, normalized)
+    return normalized
+
+
+def _contains_whole_phrase(needle: str, haystack: str) -> bool:
+    """Match a complete word or phrase, including terms ending in punctuation such as C++."""
+    pattern = rf"(?<!\w){re.escape(needle)}(?!\w)"
+    return re.search(pattern, haystack) is not None
 
 
 def _skill_matches(skill_item: str, candidate_skills: set[str]) -> bool:
-    """Return True when a skill item matches any candidate skill by exact or substring match.
+    """Return True for exact skills or contextual matches of multi-word candidate skills.
 
     Handles compound skill requirements separated by commas, 'or', or slashes.
     """
@@ -27,9 +43,25 @@ def _skill_matches(skill_item: str, candidate_skills: set[str]) -> bool:
         for candidate_skill in candidate_skills:
             if normalized_part == candidate_skill:
                 return True
-            if candidate_skill in normalized_part or normalized_part in candidate_skill:
+            if _contains_whole_phrase(candidate_skill, normalized_part):
+                return True
+            if _contains_whole_phrase(normalized_part, candidate_skill):
                 return True
     return False
+
+
+def _requirement_matches_resume_text(requirement: str, resume_text: str) -> bool:
+    """Match requirement alternatives as whole phrases in raw resume text."""
+    parts = re.split(r",|\bor\b|/", requirement, flags=re.IGNORECASE)
+    parts = [part.strip() for part in parts if part.strip()] or [requirement]
+    normalized_resume = _normalize_skill(resume_text)
+    if not normalized_resume:
+        return False
+    return any(
+        _contains_whole_phrase(_normalize_skill(part), normalized_resume)
+        or _contains_whole_phrase(normalized_resume, _normalize_skill(part))
+        for part in parts
+    )
 
 
 def _experience_requirement(requirement: str) -> tuple[float, str] | None:
@@ -48,11 +80,15 @@ def _experience_requirement(requirement: str) -> tuple[float, str] | None:
 
 
 def _match_requirements(
-    requirements: list[str], candidate_skills: set[str], candidate_experience: float
-) -> tuple[list[str], list[str]]:
-    """Match skill and explicit experience requirements."""
+    requirements: list[str],
+    candidate_skills: set[str],
+    candidate_experience: float,
+    resume_text: str,
+) -> tuple[list[str], list[str], set[str]]:
+    """Deterministically match experience, structured skills, then raw resume text."""
     matched = []
     missing = []
+    matched_via_resume_text = set()
     for requirement in requirements:
         experience_requirement = _experience_requirement(requirement)
         if experience_requirement is not None:
@@ -65,9 +101,12 @@ def _match_requirements(
                 )
         elif _skill_matches(requirement, candidate_skills):
             matched.append(requirement)
+        elif _requirement_matches_resume_text(requirement, resume_text):
+            matched.append(requirement)
+            matched_via_resume_text.add(requirement)
         else:
             missing.append(requirement)
-    return matched, missing
+    return matched, missing, matched_via_resume_text
 
 
 def match_candidate(candidate: CandidateProfile, job: JobRequirements) -> MatchResult:
@@ -98,15 +137,24 @@ def match_candidate(candidate: CandidateProfile, job: JobRequirements) -> MatchR
                 candidate_skills_set.add(p_norm)
 
     cand_exp = candidate.experience_years or 0.0
-    matched_required, missing_required = _match_requirements(
-        required_skills, candidate_skills_set, cand_exp
+    (
+        matched_required,
+        missing_required,
+        required_resume_matches,
+    ) = _match_requirements(
+        required_skills, candidate_skills_set, cand_exp, candidate.raw_resume_text or ""
     )
-    matched_preferred, missing_preferred = _match_requirements(
-        preferred_skills, candidate_skills_set, cand_exp
+    (
+        matched_preferred,
+        missing_preferred,
+        preferred_resume_matches,
+    ) = _match_requirements(
+        preferred_skills, candidate_skills_set, cand_exp, candidate.raw_resume_text or ""
     )
 
     matched_skills = matched_required + matched_preferred
     missing_skills = missing_required + missing_preferred
+    matched_via_resume_text = required_resume_matches | preferred_resume_matches
 
     # 3. Calculate experience gap (candidate exp minus min required exp)
     min_exp = job.min_experience_years or 0.0
@@ -161,4 +209,5 @@ def match_candidate(candidate: CandidateProfile, job: JobRequirements) -> MatchR
         experience_gap=experience_gap,
         match_score=match_score,
         confidence=confidence,
+        matched_via_resume_text=matched_via_resume_text,
     )

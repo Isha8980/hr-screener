@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from app.ats_check import analyze_ats_readability
 from app.explain import generate_explanation
 from app.fairness import run_fairness_check
-from app.growth import suggest_growth_project
+from app.growth import generate_interview_questions, suggest_growth_project
 from app.jd_parser import parse_job_description
 from app.matcher import match_candidate
 from app.pdf_reader import extract_text_from_pdf
@@ -67,6 +67,82 @@ class OverrideRequest(BaseModel):
     reason: str
 
 
+def _get_recruiter_token(x_recruiter_token: str | None, authorization: str | None) -> str | None:
+    token = x_recruiter_token
+    if not token and authorization:
+        if authorization.lower().startswith("bearer "):
+            token = authorization[7:].strip()
+        else:
+            token = authorization.strip()
+    return token
+
+
+def _require_recruiter_token(x_recruiter_token: str | None, authorization: str | None) -> None:
+    token = _get_recruiter_token(x_recruiter_token, authorization)
+    if not token or token not in VALID_TOKENS:
+        raise HTTPException(status_code=401, detail="Invalid or missing recruiter token.")
+
+
+async def _extract_resume_text(file: UploadFile) -> str:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file selected.")
+
+    filename = file.filename.lower()
+    if filename.endswith(".txt"):
+        try:
+            text = (await file.read()).decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise HTTPException(status_code=400, detail=f"'{file.filename}' is not valid UTF-8 text.") from exc
+    elif filename.endswith(".pdf"):
+        try:
+            text = extract_text_from_pdf(await file.read())
+        except (ValueError, RuntimeError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    else:
+        raise HTTPException(status_code=400, detail="Only .txt and .pdf files are supported.")
+
+    if not text or not text.strip():
+        raise HTTPException(status_code=400, detail="Resume text cannot be empty.")
+    return text
+
+
+def _run_evaluation(
+    job: JobRequirements,
+    candidate: CandidateProfile,
+    candidate_id: str,
+) -> tuple[dict[str, Any], Any]:
+    """Run the evaluation pipeline shared by single and batch screening."""
+    match_result = match_candidate(candidate, job)
+    fairness_result = run_fairness_check(candidate, job)
+    explanation_result = generate_explanation(match_result)
+    routing_decision = route_candidate(match_result, fairness_result)
+
+    growth_recommendation = None
+    try:
+        growth_recommendation = suggest_growth_project(match_result, candidate)
+    except (ValueError, RuntimeError):
+        growth_recommendation = None
+
+    result = {
+        "match_result": match_result.model_dump(),
+        "fairness_result": fairness_result.model_dump(),
+        "explanation": explanation_result.model_dump(),
+        "routing_decision": routing_decision,
+        "growth_recommendation": growth_recommendation.model_dump() if growth_recommendation else None,
+        "resume_formatting_check": analyze_ats_readability(candidate.raw_resume_text or ""),
+    }
+
+    if routing_decision in {"needs_review", "flagged_for_bias"}:
+        QUEUE_STORE[candidate_id] = {
+            "candidate_id": candidate_id,
+            "candidate_name": candidate.name,
+            "status": routing_decision,
+            "result": result,
+        }
+
+    return result, match_result
+
+
 @app.get("/")
 def serve_index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
@@ -109,22 +185,7 @@ def create_candidate(payload: CandidateTextRequest) -> dict[str, Any]:
 
 @app.post("/candidates/upload")
 async def upload_candidate(file: UploadFile) -> dict[str, Any]:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file selected.")
-
-    filename = file.filename.lower()
-    if filename.endswith(".txt"):
-        text = (await file.read()).decode("utf-8")
-    elif filename.endswith(".pdf"):
-        try:
-            text = extract_text_from_pdf(await file.read())
-        except (ValueError, RuntimeError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-    else:
-        raise HTTPException(status_code=400, detail="Only .txt and .pdf files are supported.")
-
-    if not text or not text.strip():
-        raise HTTPException(status_code=400, detail="Resume text cannot be empty.")
+    text = await _extract_resume_text(file)
 
     try:
         parsed_candidate = parse_resume(text)
@@ -150,38 +211,53 @@ def evaluate_candidate(payload: EvaluationRequest) -> dict[str, Any]:
     candidate: CandidateProfile = candidate_record["candidate"]
 
     try:
-        match_result = match_candidate(candidate, job)
-        fairness_result = run_fairness_check(candidate, job)
-        explanation_result = generate_explanation(match_result)
-        routing_decision = route_candidate(match_result, fairness_result)
-
-        growth_recommendation = None
-        try:
-            growth_recommendation = suggest_growth_project(match_result, candidate)
-        except (ValueError, RuntimeError):
-            growth_recommendation = None
-
-        ats_readability = analyze_ats_readability(candidate.raw_resume_text or "")
-        result = {
-            "match_result": match_result.model_dump(),
-            "fairness_result": fairness_result.model_dump(),
-            "explanation": explanation_result.model_dump(),
-            "routing_decision": routing_decision,
-            "growth_recommendation": growth_recommendation.model_dump() if growth_recommendation else None,
-            "resume_formatting_check": ats_readability,
-        }
-
-        if routing_decision in {"needs_review", "flagged_for_bias"}:
-            QUEUE_STORE[payload.candidate_id] = {
-                "candidate_id": payload.candidate_id,
-                "candidate_name": candidate.name,
-                "status": routing_decision,
-                "result": result,
-            }
-
+        result, _ = _run_evaluation(job, candidate, payload.candidate_id)
         return result
     except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/batch-evaluate")
+async def batch_evaluate(
+    job_id: str = Form(...),
+    files: list[UploadFile] = File(...),
+    x_recruiter_token: str | None = Header(default=None, alias="X-Recruiter-Token"),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+) -> list[dict[str, Any]]:
+    _require_recruiter_token(x_recruiter_token, authorization)
+
+    job_record = JOB_STORE.get(job_id)
+    if not job_record:
+        raise HTTPException(status_code=404, detail=f"Job with id '{job_id}' not found.")
+    if not files:
+        raise HTTPException(status_code=400, detail="At least one resume file is required.")
+
+    job: JobRequirements = job_record["job"]
+    batch_results: list[dict[str, Any]] = []
+    try:
+        for file in files:
+            text = await _extract_resume_text(file)
+            candidate = parse_resume(text)
+            candidate_id = str(len(CANDIDATE_STORE) + 1)
+            CANDIDATE_STORE[candidate_id] = {"candidate": candidate}
+
+            detail, match_result = _run_evaluation(job, candidate, candidate_id)
+            interview_questions = generate_interview_questions(match_result)
+            batch_results.append(
+                {
+                    "candidate_name": candidate.name,
+                    "match_score": match_result.match_score,
+                    "routing_decision": detail["routing_decision"],
+                    "matched_skills_count": len(match_result.matched_skills),
+                    "missing_skills_count": len(match_result.missing_skills),
+                    "interview_questions": interview_questions,
+                    "detail": detail,
+                }
+            )
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return sorted(batch_results, key=lambda item: item["match_score"], reverse=True)
 
 
 @app.post("/recruiter/login")
@@ -199,15 +275,7 @@ def get_queue(
     x_recruiter_token: str | None = Header(default=None, alias="X-Recruiter-Token"),
     authorization: str | None = Header(default=None, alias="Authorization"),
 ) -> list[dict[str, Any]]:
-    token = x_recruiter_token
-    if not token and authorization:
-        if authorization.lower().startswith("bearer "):
-            token = authorization[7:].strip()
-        else:
-            token = authorization.strip()
-
-    if not token or token not in VALID_TOKENS:
-        raise HTTPException(status_code=401, detail="Invalid or missing recruiter token.")
+    _require_recruiter_token(x_recruiter_token, authorization)
 
     return list(QUEUE_STORE.values())
 
