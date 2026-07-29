@@ -935,6 +935,95 @@
         border: 1px solid var(--success-border);
       }
 
+      /* Batch screening */
+      .batch-form-card {
+        margin-bottom: 24px;
+      }
+
+      .batch-file-summary {
+        margin-top: 10px;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+      }
+
+      .batch-table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-card);
+      }
+
+      .batch-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+      }
+
+      .batch-table th,
+      .batch-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .batch-table th {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .batch-result-row {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .batch-result-row:hover,
+      .batch-result-row.expanded {
+        background-color: var(--bg-card-subtle);
+      }
+
+      .batch-result-row td:first-child {
+        color: var(--text-muted);
+        font-weight: 700;
+      }
+
+      .batch-candidate-name {
+        color: var(--text-main);
+        font-weight: 700;
+      }
+
+      .batch-score {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .batch-detail-row td {
+        padding: 0;
+      }
+
+      .batch-detail-panel {
+        padding: 20px;
+        background-color: var(--bg-app);
+      }
+
+      .batch-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .interview-question-list {
+        padding-left: 20px;
+        color: var(--text-main);
+        font-size: 0.88rem;
+      }
+
+      .interview-question-list li + li {
+        margin-top: 8px;
+      }
+
       @media (max-width: 768px) {
         body {
           overflow-x: hidden;
@@ -960,7 +1049,7 @@
           width: 100%;
           margin-top: 12px;
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 6px;
         }
 
@@ -1154,6 +1243,17 @@
                   <rect x="3" y="14" width="7" height="7" rx="1"></rect>
                 </svg>
                 <span>Candidate Screener</span>
+              </a>
+            </li>
+            <li class="nav-item" id="navBatch">
+              <a href="#" onclick="switchTab('batch'); return false;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+                <span>Batch Screening</span>
               </a>
             </li>
             <li class="nav-item" id="navQueue">
@@ -1376,6 +1476,56 @@
               </div>
             </div>
           </section>
+          </div>
+
+          <!-- Batch Screening View -->
+          <div id="batchView" class="tab-view hidden">
+            <div id="batchAuthGate" class="auth-gate-card">
+              <div class="lock-icon">🔒</div>
+              <h2>Recruiter Login Required</h2>
+              <p class="muted">Recruiter login required to access batch candidate screening.</p>
+              <form id="batchLoginForm" class="login-form-inline">
+                <input type="password" id="batchPasswordInput" placeholder="Enter recruiter password" required />
+                <button type="submit" class="btn-primary-sm">Login</button>
+              </form>
+              <div id="batchLoginError" class="error-msg-text hidden">Invalid password. Please try again.</div>
+            </div>
+
+            <div id="batchContent" class="hidden">
+              <div class="workspace-intro">
+                <h1 class="workspace-title">Batch Screening</h1>
+                <p class="workspace-subtitle">Rank multiple candidates against one job and review tailored interview questions.</p>
+              </div>
+
+              <div class="card batch-form-card">
+                <div class="field">
+                  <label for="batchJobDescription">Job Description</label>
+                  <textarea id="batchJobDescription" placeholder="Paste the job description here..."></textarea>
+                </div>
+                <div class="field">
+                  <label for="batchResumeFiles">Candidate Resumes</label>
+                  <div class="file-upload-box" id="batchUploadZone">
+                    <input id="batchResumeFiles" class="file-input" type="file" accept=".pdf,.txt" multiple />
+                    <div class="file-upload-label">
+                      <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                      <span>Choose or drop multiple .pdf/.txt resumes</span>
+                    </div>
+                  </div>
+                  <div id="batchFileSummary" class="batch-file-summary">No resumes selected.</div>
+                </div>
+                <button id="batchScreenBtn" class="btn-primary" type="button">Screen All Candidates</button>
+                <div id="batchLoading" class="loading-box" style="margin-top:16px;">
+                  <div class="spinner"></div>
+                  <span>Screening and ranking candidates...</span>
+                </div>
+              </div>
+
+              <div id="batchResults"></div>
+            </div>
           </div>
 
           <!-- Review Queue View -->
@@ -1736,6 +1886,15 @@
         if (tabName === 'screener') {
           document.getElementById('navScreener').classList.add('active');
           document.getElementById('screenerView').classList.remove('hidden');
+        } else if (tabName === 'batch') {
+          document.getElementById('navBatch').classList.add('active');
+          document.getElementById('batchView').classList.remove('hidden');
+          if (recruiterToken) {
+            showBatchContent();
+          } else {
+            document.getElementById('batchAuthGate').classList.remove('hidden');
+            document.getElementById('batchContent').classList.add('hidden');
+          }
         } else if (tabName === 'queue') {
           document.getElementById('navQueue').classList.add('active');
           document.getElementById('queueView').classList.remove('hidden');
@@ -1755,6 +1914,9 @@
       const queueLoginForm = document.getElementById('queueLoginForm');
       const queuePasswordInput = document.getElementById('queuePasswordInput');
       const queueLoginError = document.getElementById('queueLoginError');
+      const batchLoginForm = document.getElementById('batchLoginForm');
+      const batchPasswordInput = document.getElementById('batchPasswordInput');
+      const batchLoginError = document.getElementById('batchLoginError');
       const recruiterBtn = document.getElementById('recruiterBtn');
       const recruiterStatusIcon = document.getElementById('recruiterStatusIcon');
       const recruiterStatusText = document.getElementById('recruiterStatusText');
@@ -1789,6 +1951,32 @@
         });
       }
 
+      if (batchLoginForm) {
+        batchLoginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          batchLoginError.classList.add('hidden');
+
+          try {
+            const res = await fetch('/recruiter/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password: batchPasswordInput.value })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Invalid recruiter password.');
+
+            recruiterToken = data.token;
+            recruiterStatusIcon.textContent = '✅';
+            recruiterStatusText.textContent = 'Recruiter Logged In';
+            batchPasswordInput.value = '';
+            showBatchContent();
+          } catch (err) {
+            batchLoginError.textContent = err.message || 'Invalid password.';
+            batchLoginError.classList.remove('hidden');
+          }
+        });
+      }
+
       if (recruiterBtn) {
         recruiterBtn.addEventListener('click', () => {
           if (recruiterToken) {
@@ -1804,6 +1992,209 @@
           }
         });
       }
+
+      function showBatchContent() {
+        document.getElementById('batchAuthGate').classList.add('hidden');
+        document.getElementById('batchContent').classList.remove('hidden');
+      }
+
+      const batchResumeFiles = document.getElementById('batchResumeFiles');
+      const batchUploadZone = document.getElementById('batchUploadZone');
+      const batchFileSummary = document.getElementById('batchFileSummary');
+      const batchScreenBtn = document.getElementById('batchScreenBtn');
+      const batchLoading = document.getElementById('batchLoading');
+      const batchResults = document.getElementById('batchResults');
+
+      function updateBatchFileSummary() {
+        const files = Array.from(batchResumeFiles.files || []);
+        batchFileSummary.textContent = files.length
+          ? `${files.length} resume${files.length === 1 ? '' : 's'} selected: ${files.map(file => file.name).join(', ')}`
+          : 'No resumes selected.';
+      }
+
+      batchResumeFiles.addEventListener('change', updateBatchFileSummary);
+      ['dragenter', 'dragover'].forEach(evt => batchUploadZone.addEventListener(evt, event => {
+        event.preventDefault();
+        batchUploadZone.classList.add('drag-over');
+      }));
+      ['dragleave', 'drop'].forEach(evt => batchUploadZone.addEventListener(evt, event => {
+        event.preventDefault();
+        batchUploadZone.classList.remove('drag-over');
+      }));
+      batchUploadZone.addEventListener('drop', event => {
+        if (event.dataTransfer.files.length) {
+          batchResumeFiles.files = event.dataTransfer.files;
+          updateBatchFileSummary();
+        }
+      });
+
+      function batchScoreColor(score) {
+        if (score >= 70) return 'var(--success)';
+        if (score >= 40) return 'var(--warning)';
+        return 'var(--danger)';
+      }
+
+      function renderBatchDetail(item, index) {
+        const detail = item.detail || {};
+        const match = detail.match_result || {};
+        const growth = detail.growth_recommendation;
+        const ats = detail.resume_formatting_check || {};
+        const questions = item.interview_questions || [];
+        const score = Math.min(100, Math.max(0, Math.round(item.match_score || 0)));
+        const color = batchScoreColor(score);
+        const circumference = 263.89;
+        const offset = circumference - (score / 100) * circumference;
+        const matched = (match.matched_skills || []).map(skill => `<li class="chip chip-matched">${escapeHtml(skill)}</li>`).join('') || '<li class="chip chip-empty">None identified</li>';
+        const missing = (match.missing_skills || []).map(skill => `<li class="chip chip-missing">${escapeHtml(skill)}</li>`).join('') || '<li class="chip chip-empty">None missing</li>';
+        const atsScore = Math.min(100, Math.max(0, Math.round(Number(ats.readability_score) || 0)));
+        const atsColor = atsScore >= 80 ? 'var(--success)' : (atsScore >= 50 ? 'var(--warning)' : 'var(--danger)');
+        const formattingItems = [
+          ...(ats.issues || []).map(value => `<li class="formatting-item issue"><span>⚠️ Issue:</span><span>${escapeHtml(value)}</span></li>`),
+          ...(ats.suggestions || []).map(value => `<li class="formatting-item suggestion"><span>💡 Tip:</span><span>${escapeHtml(value)}</span></li>`)
+        ].join('') || '<li class="formatting-item ok"><span>✅</span><span>No formatting issues detected.</span></li>';
+        const growthHtml = growth ? `
+          <div class="card">
+            <div class="section-card-title">Growth &amp; Upskilling Recommendation</div>
+            <div class="growth-box">
+              <div class="growth-item"><div class="growth-label">Suggested Project</div><div class="growth-desc">${escapeHtml(growth.suggested_project || '')}</div></div>
+              <div class="growth-item"><div class="growth-label">Resume Optimization Tip</div><div class="growth-desc">${escapeHtml(growth.resume_tip || '')}</div></div>
+            </div>
+          </div>` : '';
+
+        return `
+          <tr id="batchDetail-${index}" class="batch-detail-row hidden">
+            <td colspan="6">
+              <div class="batch-detail-panel">
+                <div class="result-header-card">
+                  <div class="score-meta-bar">
+                    <div class="score-summary-group">
+                      <div class="score-ring-container">
+                        <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
+                          <circle class="progress-ring__bg" cx="50" cy="50" r="42" stroke-width="8" fill="transparent"></circle>
+                          <circle class="progress-ring__circle" cx="50" cy="50" r="42" stroke-width="8" fill="transparent" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" style="stroke:${color}"></circle>
+                        </svg>
+                        <div class="score-number-box"><span class="score-number" style="color:${color}">${score}</span><span class="score-label">MATCH %</span></div>
+                      </div>
+                      <span class="badge badge-${escapeHtml(item.routing_decision)}">${escapeHtml(item.routing_decision.replace(/_/g, ' ').toUpperCase())}</span>
+                    </div>
+                  </div>
+                  <div class="skills-grid">
+                    <div class="skills-block"><div class="skills-title matched">Matched Skills</div><ul class="chip-list">${matched}</ul></div>
+                    <div class="skills-block"><div class="skills-title missing">Missing Skills</div><ul class="chip-list">${missing}</ul></div>
+                  </div>
+                </div>
+                <div class="batch-detail-grid">
+                  <div class="card"><div class="section-card-title">AI Evaluation Rationale</div><p class="card-body-p">${escapeHtml(detail.explanation?.rationale_text || 'No explanation available.')}</p></div>
+                  ${growthHtml}
+                  <div class="card">
+                    <div class="section-card-title">Resume Formatting &amp; ATS Check</div>
+                    <div class="ats-score-title" style="color:${atsColor}">ATS Compatibility Score: ${atsScore}/100</div>
+                    <p class="ats-score-note">Heuristic formatting check -- not a standardized industry ATS score.</p>
+                    <ul class="formatting-list" style="margin-top:12px;">${formattingItems}</ul>
+                  </div>
+                  <div class="card">
+                    <div class="section-card-title">Suggested Interview Questions</div>
+                    <ol class="interview-question-list">${questions.map(question => `<li>${escapeHtml(question)}</li>`).join('')}</ol>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>`;
+      }
+
+      function renderBatchResults(results) {
+        if (!results.length) {
+          batchResults.innerHTML = '<div class="card"><p class="muted">No candidates were returned.</p></div>';
+          return;
+        }
+
+        const rows = results.map((item, index) => {
+          const score = Math.round(item.match_score || 0);
+          const status = item.routing_decision || 'needs_review';
+          return `
+            <tr class="batch-result-row" data-detail-index="${index}" tabindex="0" aria-expanded="false">
+              <td>#${index + 1}</td>
+              <td class="batch-candidate-name">${escapeHtml(item.candidate_name)}</td>
+              <td><span class="batch-score" style="color:${batchScoreColor(score)}">${score}%</span></td>
+              <td><span class="badge badge-${escapeHtml(status)}">${escapeHtml(status.replace(/_/g, ' ').toUpperCase())}</span></td>
+              <td>${item.matched_skills_count}</td>
+              <td>${item.missing_skills_count}</td>
+            </tr>
+            ${renderBatchDetail(item, index)}`;
+        }).join('');
+
+        batchResults.innerHTML = `
+          <div class="batch-table-wrap">
+            <table class="batch-table">
+              <thead><tr><th>Rank</th><th>Candidate</th><th>Match Score</th><th>Routing</th><th>Matched</th><th>Missing</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+
+        batchResults.querySelectorAll('.batch-result-row').forEach(row => {
+          const toggle = () => {
+            const detailRow = document.getElementById(`batchDetail-${row.dataset.detailIndex}`);
+            const expanding = detailRow.classList.contains('hidden');
+            detailRow.classList.toggle('hidden');
+            row.classList.toggle('expanded', expanding);
+            row.setAttribute('aria-expanded', String(expanding));
+          };
+          row.addEventListener('click', toggle);
+          row.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              toggle();
+            }
+          });
+        });
+      }
+
+      batchScreenBtn.addEventListener('click', async () => {
+        const jobText = document.getElementById('batchJobDescription').value.trim();
+        const files = Array.from(batchResumeFiles.files || []);
+        if (!jobText || !files.length) {
+          alert('Please provide a job description and select at least one resume.');
+          return;
+        }
+
+        batchScreenBtn.disabled = true;
+        batchLoading.style.display = 'flex';
+        batchResults.innerHTML = '';
+        try {
+          const jobResponse = await fetch('/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: jobText })
+          });
+          const jobData = await jobResponse.json();
+          if (!jobResponse.ok) throw new Error(jobData.detail || 'Failed to create job.');
+
+          const formData = new FormData();
+          formData.append('job_id', jobData.job_id);
+          files.forEach(file => formData.append('files', file));
+          const response = await fetch('/batch-evaluate', {
+            method: 'POST',
+            headers: { 'X-Recruiter-Token': recruiterToken },
+            body: formData
+          });
+          const data = await response.json();
+          if (response.status === 401) {
+            recruiterToken = null;
+            recruiterStatusIcon.textContent = '🔑';
+            recruiterStatusText.textContent = 'Recruiter Login';
+            document.getElementById('batchAuthGate').classList.remove('hidden');
+            document.getElementById('batchContent').classList.add('hidden');
+            throw new Error('Recruiter session expired. Please log in again.');
+          }
+          if (!response.ok) throw new Error(data.detail || 'Batch screening failed.');
+          renderBatchResults(data);
+        } catch (err) {
+          batchResults.innerHTML = `<div class="error-msg-text">${escapeHtml(err.message || 'Batch screening failed.')}</div>`;
+        } finally {
+          batchScreenBtn.disabled = false;
+          batchLoading.style.display = 'none';
+        }
+      });
 
       async function loadQueue() {
         if (!recruiterToken) {

@@ -2,7 +2,7 @@
 Pydantic data models for the hr-screener application.
 """
 
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Set
 from pydantic import BaseModel, Field
 
 
@@ -32,6 +32,10 @@ class MatchResult(BaseModel):
     experience_gap: float = Field(0.0, description="Difference in experience years")
     match_score: float = Field(..., ge=0.0, le=100.0, description="Match score between 0 and 100")
     confidence: Literal["high", "medium", "low"] = Field(..., description="Confidence level: high, medium, or low")
+    matched_via_resume_text: Set[str] = Field(
+        default_factory=set,
+        description="Concrete requirements matched from raw resume text rather than structured skills",
+    )
 
 
 class FairnessCheckResult(BaseModel):
@@ -55,3 +59,12 @@ class GrowthRecommendation(BaseModel):
     missing_skill: str = Field(..., description="Missing skill targeted for growth")
     suggested_project: str = Field(..., description="Suggested project to acquire missing skill")
     resume_tip: str = Field(..., description="Tip for updating resume with new skill")
+
+
+class InterviewQuestions(BaseModel):
+    questions: List[str] = Field(
+        ...,
+        min_length=2,
+        max_length=3,
+        description="Candidate-specific interview questions targeting match gaps",
+    )

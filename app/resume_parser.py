@@ -64,6 +64,10 @@ def parse_resume(text: str) -> CandidateProfile:
         "the exact schema: name, skills (list of strings), experience_years (numeric total years of experience), "
         "education (degree/university details), certifications (list of strings, default to empty list if none), "
         "and raw_resume_text (the raw input text).\n"
+        "Only include skills, tools, or competencies that are explicitly stated or directly named in the resume text. "
+        "Do not infer generic soft skills (e.g. 'collaboration', 'communication', 'confidentiality') unless the "
+        "resume uses that specific language. Prefer concrete nouns (tools, technologies, certifications, named "
+        "methodologies) over abstract inferred traits.\n"
         "Handle missing sections gracefully (e.g. if certifications or education are omitted, provide empty list or 'Not specified')."
     )
 
