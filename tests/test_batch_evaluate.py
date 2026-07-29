@@ -130,7 +130,7 @@ def test_batch_evaluate_ranks_multiple_resumes_and_returns_specific_questions(cl
     assert results[0]["matched_skills_count"] == 2
     assert results[1]["missing_skills_count"] == 2
     assert results[0]["detail"]["routing_decision"] == "auto_ranked"
-    assert results[0]["interview_questions"] != results[1]["interview_questions"]
     assert "Kubernetes" in results[0]["interview_questions"][0]
-    assert "FastAPI" in results[1]["interview_questions"][0]
-    assert "interview_questions" not in results[0]["detail"]
+    assert results[1]["interview_questions"] is None
+    assert results[0]["detail"]["interview_questions"] == results[0]["interview_questions"]
+    assert results[1]["detail"]["interview_questions"] is None

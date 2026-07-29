@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.resume_parser import parse_resume, _sanitize_log_text
-from app.pdf_reader import extract_text_from_pdf
+from app.pdf_reader import extract_text_from_pdf, _despace_merged_words
 from app.schemas import CandidateProfile
 
 
@@ -104,3 +104,25 @@ def test_extract_text_from_pdf_success(mock_pdf_reader):
 
     extracted = extract_text_from_pdf(b"%PDF-1.4 dummy content")
     assert extracted == "Candidate Resume Content"
+
+
+def test_despace_merged_words_splits_long_run_together_text():
+    merged = "MScinDataScienceandAnalyticsSept2022"
+    result = _despace_merged_words(merged)
+    assert result == "MScin Data Scienceand Analytics Sept2022"
+    assert "Analytics" in result.split()
+
+
+def test_despace_merged_words_leaves_correctly_spaced_text_unchanged():
+    normal = "Kartik Jain\nLeeds, England, UK\nActuarial Analyst with strong Python skills."
+    assert _despace_merged_words(normal) == normal
+
+
+def test_despace_merged_words_does_not_split_short_camel_case_terms():
+    text = "Experience with JavaScript and PowerBI dashboards."
+    assert _despace_merged_words(text) == text
+
+
+def test_despace_merged_words_splits_job_title_intern_example():
+    result = _despace_merged_words("DataAnalyticsIntern Nov2019-Jan2020")
+    assert result == "Data Analytics Intern Nov2019-Jan2020"

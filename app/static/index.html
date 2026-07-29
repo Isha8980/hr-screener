@@ -383,6 +383,13 @@
         margin-top: 6px;
       }
 
+      .queue-section-title {
+        color: var(--text-main);
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 24px 0 12px;
+      }
+
       .tab-view.hidden {
         display: none !important;
       }
@@ -745,6 +752,12 @@
       }
 
       .badge-flagged_for_bias {
+        background-color: var(--danger-bg);
+        color: var(--danger);
+        border: 1px solid var(--danger-border);
+      }
+
+      .badge-auto_rejected {
         background-color: var(--danger-bg);
         color: var(--danger);
         border: 1px solid var(--danger-border);
@@ -2060,6 +2073,11 @@
               <div class="growth-item"><div class="growth-label">Resume Optimization Tip</div><div class="growth-desc">${escapeHtml(growth.resume_tip || '')}</div></div>
             </div>
           </div>` : '';
+        const questionsHtml = questions.length ? `
+          <div class="card">
+            <div class="section-card-title">Suggested Interview Questions</div>
+            <ol class="interview-question-list">${questions.map(question => `<li>${escapeHtml(question)}</li>`).join('')}</ol>
+          </div>` : '';
 
         return `
           <tr id="batchDetail-${index}" class="batch-detail-row hidden">
@@ -2092,10 +2110,7 @@
                     <p class="ats-score-note">Heuristic formatting check -- not a standardized industry ATS score.</p>
                     <ul class="formatting-list" style="margin-top:12px;">${formattingItems}</ul>
                   </div>
-                  <div class="card">
-                    <div class="section-card-title">Suggested Interview Questions</div>
-                    <ol class="interview-question-list">${questions.map(question => `<li>${escapeHtml(question)}</li>`).join('')}</ol>
-                  </div>
+                  ${questionsHtml}
                 </div>
               </div>
             </td>
@@ -2229,14 +2244,13 @@
             return;
           }
 
-          let html = '';
-          data.forEach(item => {
+          const renderQueueCards = items => items.map(item => {
             const match = item.result?.match_result || {};
             const score = Math.round(match.match_score || 0);
             const status = item.status || 'needs_review';
             const statusLabel = status.replace(/_/g, ' ').toUpperCase();
 
-            html += `
+            return `
               <div class="queue-card">
                 <div class="queue-card-head">
                   <div>
@@ -2249,8 +2263,23 @@
                 <div class="queue-skills"><strong>Missing Skills:</strong> ${(match.missing_skills || []).join(', ') || 'None'}</div>
               </div>
             `;
-          });
-          container.innerHTML = html;
+          }).join('');
+
+          const activeReview = data.filter(item => item.status !== 'auto_rejected');
+          const autoRejected = data.filter(item => item.status === 'auto_rejected');
+          const activeHtml = activeReview.length
+            ? renderQueueCards(activeReview)
+            : '<div class="card"><p class="muted">No candidates currently require active review.</p></div>';
+          const rejectedHtml = autoRejected.length
+            ? renderQueueCards(autoRejected)
+            : '<div class="card"><p class="muted">No candidates have been auto-rejected.</p></div>';
+
+          container.innerHTML = `
+            <h2 class="queue-section-title">Needs Active Review</h2>
+            ${activeHtml}
+            <h2 class="queue-section-title">Auto-Rejected (Below Threshold)</h2>
+            ${rejectedHtml}
+          `;
         } catch (err) {
           container.innerHTML = `<div class="error-msg-text">Failed to load queue: ${escapeHtml(err.message)}</div>`;
         }

@@ -118,6 +118,10 @@ def test_dashboard_routes_with_mocked_openai(monkeypatch, client):
         suggested_project="Build a FastAPI service with SQLAlchemy and PostgreSQL.",
         resume_tip="Highlight the FastAPI project under backend development.",
     ))
+    monkeypatch.setattr(
+        "app.dashboard.generate_interview_questions",
+        lambda match_result: ["How have you applied FastAPI in a production project?"],
+    )
     monkeypatch.setattr("app.dashboard.log_override", lambda **kwargs: None)
 
     create_job_response = client.post("/jobs", json={"text": "Backend Engineer job"})

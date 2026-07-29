@@ -59,3 +59,26 @@ def test_medium_confidence_candidate_is_not_auto_ranked():
     )
 
     assert route_candidate(match_result, fairness_result) == "needs_review"
+
+
+def test_low_scoring_unflagged_candidate_is_auto_rejected():
+    match_result = MatchResult(
+        candidate_name="Low Score",
+        matched_skills=[],
+        missing_skills=["Python"],
+        experience_gap=-2.0,
+        match_score=44.99,
+        confidence="low",
+    )
+    fairness_result = FairnessCheckResult(
+        candidate_name="Low Score",
+        original_score=44.99,
+        masked_score=44.99,
+        score_delta=0.0,
+        flagged=False,
+    )
+
+    assert route_candidate(match_result, fairness_result) == "auto_rejected"
+
+    fairness_result.flagged = True
+    assert route_candidate(match_result, fairness_result) == "flagged_for_bias"

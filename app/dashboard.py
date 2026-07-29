@@ -123,6 +123,10 @@ def _run_evaluation(
     except (ValueError, RuntimeError):
         growth_recommendation = None
 
+    interview_questions = None
+    if match_result.match_score >= 70:
+        interview_questions = generate_interview_questions(match_result)
+
     result = {
         "match_result": match_result.model_dump(),
         "fairness_result": fairness_result.model_dump(),
@@ -130,9 +134,10 @@ def _run_evaluation(
         "routing_decision": routing_decision,
         "growth_recommendation": growth_recommendation.model_dump() if growth_recommendation else None,
         "resume_formatting_check": analyze_ats_readability(candidate.raw_resume_text or ""),
+        "interview_questions": interview_questions,
     }
 
-    if routing_decision in {"needs_review", "flagged_for_bias"}:
+    if routing_decision in {"needs_review", "flagged_for_bias", "auto_rejected"}:
         QUEUE_STORE[candidate_id] = {
             "candidate_id": candidate_id,
             "candidate_name": candidate.name,
@@ -242,7 +247,6 @@ async def batch_evaluate(
             CANDIDATE_STORE[candidate_id] = {"candidate": candidate}
 
             detail, match_result = _run_evaluation(job, candidate, candidate_id)
-            interview_questions = generate_interview_questions(match_result)
             batch_results.append(
                 {
                     "candidate_name": candidate.name,
@@ -250,7 +254,7 @@ async def batch_evaluate(
                     "routing_decision": detail["routing_decision"],
                     "matched_skills_count": len(match_result.matched_skills),
                     "missing_skills_count": len(match_result.missing_skills),
-                    "interview_questions": interview_questions,
+                    "interview_questions": detail["interview_questions"],
                     "detail": detail,
                 }
             )

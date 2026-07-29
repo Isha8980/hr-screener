@@ -9,13 +9,17 @@ from typing import Any
 from app.schemas import FairnessCheckResult, MatchResult
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+AUTO_REJECT_THRESHOLD = 45.0
+AUTO_RANK_THRESHOLD = 70.0
 
 
 def route_candidate(match_result: MatchResult, fairness_result: FairnessCheckResult) -> str:
-    """Route a candidate to auto-ranking, review, or bias review based on confidence and fairness."""
+    """Route a candidate based on fairness, score thresholds, and confidence."""
     if fairness_result.flagged:
         return "flagged_for_bias"
-    if match_result.confidence == "high":
+    if match_result.match_score < AUTO_REJECT_THRESHOLD:
+        return "auto_rejected"
+    if match_result.confidence == "high" and match_result.match_score >= AUTO_RANK_THRESHOLD:
         return "auto_ranked"
     return "needs_review"
 
