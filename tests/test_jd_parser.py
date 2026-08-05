@@ -94,6 +94,57 @@ def test_parse_job_description_keeps_compound_qualification_as_one_requirement(m
     assert fragmented_sub_clauses.isdisjoint(set(result.required_skills))
 
 
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.jd_parser.OpenAI")
+def test_parse_job_description_summarizes_narrative_responsibilities_paragraph(mock_openai):
+    """A narrative-paragraph job posting describing day-to-day responsibilities
+    (not bullet points) must be summarized into a small number of core,
+    resume-matchable competency names -- not a separate fragmented entry for
+    every verb or clause in the prose."""
+    mock_client = MagicMock()
+    mock_openai.return_value = mock_client
+
+    job_text = (
+        "Job Description\n"
+        "We are seeking a Business Analyst to join our team. Identifies data patterns & trends, and "
+        "provides insights to enhance business decision making. Partners with stakeholders across the "
+        "organization to understand business issues and translate them into analytical questions. "
+        "Recommends actions for future developments & strategic business opportunities based on findings. "
+        "Builds and maintains dashboards and reports to track key business metrics over time. Works with "
+        "cross-functional teams to prioritize and scope analytics projects, communicating findings clearly "
+        "to both technical and non-technical audiences. Continuously looks for opportunities to improve "
+        "existing business processes and reporting workflows.\n"
+    )
+
+    expected_jd = JobRequirements(
+        title="Business Analyst",
+        required_skills=["Data Analysis", "Stakeholder Management", "Dashboarding & Reporting", "Process Improvement"],
+        preferred_skills=["Cross-functional Collaboration", "Communication Skills"],
+        min_experience_years=2.0,
+        max_experience_years=None,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = expected_jd
+    mock_client.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+
+    result = parse_job_description(job_text)
+
+    total_items = len(result.required_skills) + len(result.preferred_skills)
+    assert total_items <= 10
+
+    all_skills = set(result.required_skills) | set(result.preferred_skills)
+    granular_verb_phrase_fragments = {
+        "business issue identification",
+        "insight generation",
+        "strategic business opportunity recommendation",
+        "data pattern identification",
+    }
+    assert granular_verb_phrase_fragments.isdisjoint(all_skills)
+
+
 def test_parse_job_description_empty_text():
     with pytest.raises(ValueError, match="cannot be empty"):
         parse_job_description("   ")

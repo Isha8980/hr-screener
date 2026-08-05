@@ -65,7 +65,15 @@ def parse_job_description(text: str) -> JobRequirements:
         "skill/qualification name, not multiple fragmented sub-requirements. Only split into separate "
         "requirements when the posting is genuinely listing distinct, independent qualifications (e.g., separate "
         "bullet points, or a list joined by 'and'/'or' between clearly different skills like 'SQL, R, Python, or "
-        "C++')."
+        "C++').\n"
+        "Required and preferred skills should represent CORE, NAMEABLE competencies or qualifications that a "
+        "candidate could reasonably list on their own resume (e.g., 'Data Analysis', 'Stakeholder Management', "
+        "'Risk Assessment', 'Process Improvement') -- not verb phrases lifted directly from job responsibility "
+        "descriptions (e.g., NOT 'business issue identification', NOT 'strategic business opportunity "
+        "recommendation'). When a responsibilities section describes day-to-day duties in narrative prose, "
+        "extract only the 4-8 underlying skill/competency THEMES it implies, not a separate entry for every verb "
+        "or clause. Aim for a required_skills + preferred_skills list of roughly 5-10 total items for a typical "
+        "job posting, not 15+."
     )
 
     try:
