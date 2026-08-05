@@ -49,6 +49,79 @@ def test_parse_resume_success(mock_openai, sample_resume_text):
 
 @patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
 @patch("app.resume_parser.OpenAI")
+def test_parse_resume_extracts_skills_from_every_labeled_section(mock_openai):
+    """A resume with multiple distinct skill sections (Technical, Soft, Finance)
+    should have skills from all of them present in the parsed profile, not just
+    the most prominent section."""
+    mock_client = MagicMock()
+    mock_openai.return_value = mock_client
+
+    resume_text = (
+        "Jamie Rivera\n"
+        "Technical Skills: Python, SQL\n"
+        "Soft Skills: Communication, Leadership\n"
+        "Finance Skills: Budgeting, Forecasting\n"
+    )
+
+    expected_profile = CandidateProfile(
+        name="Jamie Rivera",
+        skills=["Python", "SQL", "Communication", "Leadership", "Budgeting", "Forecasting"],
+        experience_years=4.0,
+        education="Bachelor of Science in Finance",
+        certifications=[],
+        raw_resume_text=resume_text,
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = expected_profile
+    mock_client.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+
+    profile = parse_resume(resume_text)
+
+    technical_skills = {"Python", "SQL"}
+    soft_skills = {"Communication", "Leadership"}
+    finance_skills = {"Budgeting", "Forecasting"}
+
+    assert technical_skills.issubset(profile.skills)
+    assert soft_skills.issubset(profile.skills)
+    assert finance_skills.issubset(profile.skills)
+
+
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.resume_parser.OpenAI")
+def test_parse_resume_includes_generic_sounding_skill_when_explicitly_listed(mock_openai):
+    """"Communication" must be included when explicitly listed in a skills
+    section alongside other skills, not silently dropped for seeming generic."""
+    mock_client = MagicMock()
+    mock_openai.return_value = mock_client
+
+    resume_text = (
+        "Taylor Morgan\n"
+        "Skills: Stakeholder Management, Communication, Structured Thinking\n"
+    )
+
+    expected_profile = CandidateProfile(
+        name="Taylor Morgan",
+        skills=["Stakeholder Management", "Communication", "Structured Thinking"],
+        experience_years=3.0,
+        education="Bachelor of Arts",
+        certifications=[],
+        raw_resume_text=resume_text,
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = expected_profile
+    mock_client.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+
+    profile = parse_resume(resume_text)
+
+    assert "Communication" in profile.skills
+    assert "Stakeholder Management" in profile.skills
+    assert "Structured Thinking" in profile.skills
+
+
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.resume_parser.OpenAI")
 def test_parse_resume_overwrites_model_raw_text_with_original_input(mock_openai):
     original_text = "  Name\n\t• Built an ATS parser\n- Preserved whitespace  \n"
     model_profile = CandidateProfile(

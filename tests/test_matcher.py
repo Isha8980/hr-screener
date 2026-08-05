@@ -407,3 +407,281 @@ def test_single_word_requirement_is_caught_by_strict_first_pass():
     assert result.matched_skills == ["Communication"]
     assert result.missing_skills == []
     assert result.matched_via_resume_text == set()
+
+
+def test_business_analytics_skill_matches_business_analysis_requirement():
+    candidate = CandidateProfile(
+        name="Priya Nair",
+        skills=["Business Analytics"],
+        experience_years=3.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text="Business analyst with a background in Business Analytics.",
+    )
+    job = JobRequirements(
+        title="Business Analyst",
+        required_skills=["Business Analysis"],
+        preferred_skills=[],
+        min_experience_years=2.0,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == ["Business Analysis"]
+    assert result.missing_skills == []
+
+
+def test_data_analytics_skill_matches_data_analysis_requirement():
+    candidate = CandidateProfile(
+        name="Reporting Analyst",
+        skills=["Data Analytics"],
+        experience_years=3.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text="Reporting analyst experienced in Data Analytics.",
+    )
+    job = JobRequirements(
+        title="Reporting Analyst",
+        required_skills=["Data Analysis"],
+        preferred_skills=[],
+        min_experience_years=2.0,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == ["Data Analysis"]
+    assert result.missing_skills == []
+
+
+def test_msc_in_resume_text_matches_postgraduate_degree_requirement():
+    candidate = CandidateProfile(
+        name="Kartik Jain",
+        skills=["Python"],
+        experience_years=3.0,
+        education="MSc in Business Analytics, University of Leeds",
+        certifications=[],
+        raw_resume_text="Candidate holds an MSc in Business Analytics from a top university.",
+    )
+    job = JobRequirements(
+        title="Business Analyst",
+        required_skills=["Postgraduate degree"],
+        preferred_skills=[],
+        min_experience_years=2.0,
+        education_level="Postgraduate Degree",
+        job_family="Analytics",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == ["Postgraduate degree"]
+    assert result.missing_skills == []
+
+
+@pytest.mark.parametrize(
+    ("candidate_skill", "job_requirement"),
+    [
+        ("Bachelors", "Bachelor's Degree"),
+        ("Doctorate", "PhD"),
+        ("Financial Analytics", "Financial Analysis"),
+        ("Market Analysis", "Market Research"),
+        ("Interpersonal Skills", "Communication Skills"),
+        ("Analytical Thinking", "Analytical Skills"),
+        ("Problem Solving", "Problem-Solving Skills"),
+        ("Client Management", "Stakeholder Management"),
+        ("Project Coordination", "Project Management"),
+        ("Teamwork", "Cross-functional Collaboration"),
+        ("Detail-Oriented", "Attention to Detail"),
+        ("Organizational Skills", "Time Management"),
+        ("Public Speaking", "Presentation Skills"),
+        ("Team Leadership", "Leadership"),
+        ("MS PowerPoint", "PPT"),
+        ("MS Word", "Word"),
+    ],
+)
+def test_expanded_synonym_groups_match_across_terms(candidate_skill, job_requirement):
+    """One representative pair per newly-added synonym group (the degree,
+    analytics/business, soft-skill, and tool-abbreviation groups not already
+    covered by earlier tests)."""
+    candidate = CandidateProfile(
+        name="Candidate",
+        skills=[candidate_skill],
+        experience_years=3.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text=f"Experienced professional skilled in {candidate_skill}.",
+    )
+    job = JobRequirements(
+        title="Generalist Role",
+        required_skills=[job_requirement],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="General",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == [job_requirement]
+    assert result.missing_skills == []
+
+
+def test_expanded_synonym_groups_do_not_cause_false_positive_matches():
+    """A candidate with none of the newly-added synonym vocabulary must not get
+    spurious matches against a job requiring many of those canonical terms."""
+    candidate = CandidateProfile(
+        name="Warehouse Associate",
+        skills=["Forklift Operation", "Inventory Counting", "Shipping Logistics"],
+        experience_years=2.0,
+        education="High School Diploma",
+        certifications=[],
+        raw_resume_text=(
+            "Warehouse associate experienced in forklift operation, inventory "
+            "counting, and shipping logistics."
+        ),
+    )
+    job = JobRequirements(
+        title="Business Analyst",
+        required_skills=[
+            "Bachelor's Degree",
+            "PhD",
+            "Financial Analysis",
+            "Market Research",
+            "Business Intelligence",
+            "Communication Skills",
+            "Analytical Skills",
+            "Problem-Solving Skills",
+            "Stakeholder Management",
+            "Project Management",
+            "Leadership",
+            "Excel",
+            "PowerPoint",
+            "Word",
+        ],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == []
+    assert len(result.missing_skills) == len(job.required_skills)
+
+
+def test_stray_word_in_resume_text_does_not_match_ms_word_requirement():
+    """A resume that merely uses the ordinary English word "word" must not
+    satisfy an "MS Word" requirement now that bare "word" is no longer
+    word-boundary matched."""
+    candidate = CandidateProfile(
+        name="Content Writer",
+        skills=["Copywriting", "SEO"],
+        experience_years=2.0,
+        education="Bachelor's Degree",
+        certifications=[],
+        raw_resume_text="Wrote a one-word summary for each campaign to keep messaging tight.",
+    )
+    job = JobRequirements(
+        title="Office Administrator",
+        required_skills=["MS Word"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Administration",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == []
+    assert result.missing_skills == ["MS Word"]
+
+
+def test_unrelated_ba_abbreviation_does_not_match_bachelors_degree_requirement():
+    """A resume that uses "BA" as an unrelated abbreviation (e.g. a department
+    name) must not satisfy a "Bachelor's degree" requirement now that bare
+    "ba"/"bs" are no longer word-boundary matched."""
+    candidate = CandidateProfile(
+        name="Client Onboarding Specialist",
+        skills=["Client Onboarding", "CRM Administration"],
+        experience_years=3.0,
+        education="High School Diploma",
+        certifications=[],
+        raw_resume_text="Worked in the BA department handling client onboarding and CRM administration.",
+    )
+    job = JobRequirements(
+        title="Office Administrator",
+        required_skills=["Bachelor's degree"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Administration",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == []
+    assert result.missing_skills == ["Bachelor's degree"]
+
+
+@pytest.mark.parametrize(
+    ("candidate_skill", "job_requirement"),
+    [
+        ("Microsoft Word", "MS Word"),
+        ("Bachelors", "Bachelor's Degree"),
+        ("Business Intelligence", "Business Intelligence"),
+    ],
+)
+def test_safer_multi_word_synonym_forms_still_match(candidate_skill, job_requirement):
+    """The retained fuller, unambiguous forms must still match correctly after
+    removing the risky bare "bi"/"ba"/"bs"/"word" entries."""
+    candidate = CandidateProfile(
+        name="Candidate",
+        skills=[candidate_skill],
+        experience_years=3.0,
+        education="Bachelor's Degree",
+        certifications=[],
+        raw_resume_text=f"Experienced professional skilled in {candidate_skill}.",
+    )
+    job = JobRequirements(
+        title="Generalist Role",
+        required_skills=[job_requirement],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="General",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == [job_requirement]
+    assert result.missing_skills == []
+
+
+def test_synonym_table_does_not_cause_false_positive_business_analysis_match():
+    """A candidate with no analytics/business-analysis background must not match
+    "Business Analysis" just because the synonym table exists."""
+    candidate = CandidateProfile(
+        name="Graphic Designer",
+        skills=["Graphic Design", "Photoshop", "Illustrator"],
+        experience_years=3.0,
+        education="Bachelor of Fine Arts",
+        certifications=[],
+        raw_resume_text="Graphic designer skilled in Photoshop and Illustrator.",
+    )
+    job = JobRequirements(
+        title="Business Analyst",
+        required_skills=["Business Analysis"],
+        preferred_skills=[],
+        min_experience_years=2.0,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == []
+    assert result.missing_skills == ["Business Analysis"]

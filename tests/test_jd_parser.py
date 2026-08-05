@@ -47,6 +47,53 @@ def test_parse_job_description_success(mock_openai, sample_jd_text):
     assert result.job_family == "Engineering"
 
 
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.jd_parser.OpenAI")
+def test_parse_job_description_keeps_compound_qualification_as_one_requirement(mock_openai):
+    """A single bullet describing one qualification with supporting detail
+    (e.g. "data analysis, including identifying trends, generating summary
+    statistics, and drawing insights...") must be extracted as one requirement,
+    not fragmented into 5+ sub-requirements -- fragmenting it would artificially
+    deflate every candidate's match score since resumes never state these
+    sub-clauses as discrete, separate skills."""
+    mock_client = MagicMock()
+    mock_openai.return_value = mock_client
+
+    job_text = (
+        "About the job\n"
+        "Minimum qualifications:\n"
+        "Bachelor's degree or equivalent practical experience.\n"
+        "1 year of experience in data analysis, including identifying trends, generating summary "
+        "statistics, and drawing insights from quantitative and qualitative data.\n"
+        "1 year of experience with one or more of the following languages: SQL, R, Python, or C++.\n"
+    )
+
+    expected_jd = JobRequirements(
+        title="Data Analyst",
+        required_skills=["Data Analysis", "SQL, R, Python, or C++"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        max_experience_years=None,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = expected_jd
+    mock_client.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+
+    result = parse_job_description(job_text)
+
+    assert len(result.required_skills) <= 2
+    fragmented_sub_clauses = {
+        "identifying trends",
+        "generating summary statistics",
+        "drawing insights from quantitative data",
+        "drawing insights from qualitative data",
+    }
+    assert fragmented_sub_clauses.isdisjoint(set(result.required_skills))
+
+
 def test_parse_job_description_empty_text():
     with pytest.raises(ValueError, match="cannot be empty"):
         parse_job_description("   ")

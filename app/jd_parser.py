@@ -58,7 +58,14 @@ def parse_job_description(text: str) -> JobRequirements:
         "You are an expert HR recruitment assistant. "
         "Your task is to parse the provided job description text and extract structured information "
         "matching the exact required fields: title, required_skills, preferred_skills, "
-        "min_experience_years, max_experience_years, education_level, and job_family."
+        "min_experience_years, max_experience_years, education_level, and job_family.\n"
+        "When a single job posting bullet or sentence describes ONE qualification with supporting detail or "
+        "examples (e.g., 'experience in data analysis, including identifying trends, generating summary "
+        "statistics, and drawing insights from data'), extract it as ONE requirement using its core "
+        "skill/qualification name, not multiple fragmented sub-requirements. Only split into separate "
+        "requirements when the posting is genuinely listing distinct, independent qualifications (e.g., separate "
+        "bullet points, or a list joined by 'and'/'or' between clearly different skills like 'SQL, R, Python, or "
+        "C++')."
     )
 
     try:

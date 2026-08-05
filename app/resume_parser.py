@@ -68,6 +68,14 @@ def parse_resume(text: str) -> CandidateProfile:
         "Do not infer generic soft skills (e.g. 'collaboration', 'communication', 'confidentiality') unless the "
         "resume uses that specific language. Prefer concrete nouns (tools, technologies, certifications, named "
         "methodologies) over abstract inferred traits.\n"
+        "This resume may contain multiple distinct skill groupings or sections (e.g., Technical Skills, Tools & "
+        "Frameworks, Professional Skills, Soft Skills, Finance & Operations, or similarly labeled sections). You "
+        "MUST extract skills from EVERY such section found in the resume, not just the most prominent one. Before "
+        "finalizing your answer, review the full resume text once more and confirm you have not omitted any "
+        "labeled skill section.\n"
+        "Do not skip or omit a skill just because it seems generic or commonly mentioned (e.g., 'Communication', "
+        "'Teamwork', 'Leadership') -- if it is explicitly listed as a skill in the resume, include it exactly as "
+        "written, with the same treatment as more specific or technical skills.\n"
         "Handle missing sections gracefully (e.g. if certifications or education are omitted, provide empty list or 'Not specified')."
     )
 

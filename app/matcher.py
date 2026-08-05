@@ -10,15 +10,57 @@ from app.schemas import CandidateProfile, JobRequirements, MatchResult
 _SKILL_ABBREVIATIONS = {
     "ms": "microsoft",
     "ppt": "powerpoint",
-    "bi": "business intelligence",
 }
+
+# Curated groups of professional/resume terms that are practically always
+# interchangeable but share no matching substring, so word-boundary matching
+# alone would otherwise miss them. Every term in a group normalizes to the
+# group's first (canonical) term. Keep additions unambiguous.
+#
+# Deliberately excluded: bare "bi", "ba", "bs", and bare "word". These are
+# short enough to collide with ordinary English text or unrelated
+# abbreviations (e.g. "one-word summary", a company/department named "BA"),
+# so they are never word-boundary matched on their own -- only the fuller,
+# unambiguous forms below are.
+_SKILL_SYNONYM_GROUPS = [
+    # Degree / education level
+    ["postgraduate degree", "msc", "mba", "masters", "master's degree", "graduate degree"],
+    ["bachelor's degree", "bachelors", "undergraduate degree", "b.tech", "btech"],
+    ["phd", "doctorate", "doctoral degree"],
+    # Analytics / business terms
+    ["business analysis", "business analytics"],
+    ["data analysis", "data analytics"],
+    ["financial analysis", "financial analytics"],
+    ["market research", "market analysis"],
+    ["business intelligence"],
+    # Soft skill phrasing
+    ["communication skills", "communication", "interpersonal skills", "verbal and written communication"],
+    ["analytical skills", "analytical thinking", "analytical ability"],
+    ["problem-solving skills", "problem solving", "problem-solving ability"],
+    ["stakeholder management", "stakeholder engagement", "client management"],
+    ["project management", "project coordination"],
+    ["team player", "teamwork", "collaboration", "cross-functional collaboration"],
+    ["attention to detail", "detail-oriented"],
+    ["time management", "organizational skills", "planning and organizing"],
+    ["presentation skills", "public speaking"],
+    ["leadership", "leadership skills", "team leadership"],
+    # Common tool/tech abbreviations (in addition to the MS/PPT table above)
+    ["excel", "microsoft excel", "ms excel", "advanced excel"],
+    ["powerpoint", "ms powerpoint", "ppt"],
+    ["ms word", "microsoft word"],
+]
+
+_SKILL_SYNONYMS = {term: group[0] for group in _SKILL_SYNONYM_GROUPS for term in group}
 
 
 def _normalize_skill(skill: str) -> str:
-    """Normalize casing and a conservative set of unambiguous skill abbreviations."""
+    """Normalize casing and a conservative set of unambiguous skill abbreviations
+    and term synonyms."""
     normalized = skill.strip().lower()
     for abbreviation, expanded in _SKILL_ABBREVIATIONS.items():
         normalized = re.sub(rf"\b{re.escape(abbreviation)}\b", expanded, normalized)
+    for synonym, canonical in _SKILL_SYNONYMS.items():
+        normalized = re.sub(rf"\b{re.escape(synonym)}\b", canonical, normalized)
     return normalized
 
 
