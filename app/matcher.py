@@ -52,11 +52,69 @@ _SKILL_SYNONYM_GROUPS = [
 
 _SKILL_SYNONYMS = {term: group[0] for group in _SKILL_SYNONYM_GROUPS for term in group}
 
+# Programmatic British -> American spelling normalization, independent of the
+# curated synonym table above. Each rule matches a whole word ending in a
+# British suffix and rewrites it to the American form; replacements are
+# computed from the matched word itself (not a hardcoded word list), so any
+# word following the pattern is covered.
+#
+# Every rule below is gated (by minimum word length and/or a preceding-letter
+# check) specifically to avoid collapsing two genuinely different, unrelated
+# English words into the same canonical form -- e.g. without a length floor,
+# "four" would become "for", and "tour" would become "tor" (colliding with the
+# Tor network). Word length alone is otherwise harmless even when it produces
+# a non-standard spelling (e.g. "advise" -> "advize"), since normalization is
+# for internal comparison only and never shown to the user.
+def _replace_ise_yse_suffix(match: re.Match) -> str:
+    word = match.group(0)
+    return word if len(word) < 6 else word[:-2] + "ze"
+
+
+def _replace_our_suffix(match: re.Match) -> str:
+    word = match.group(0)
+    return word if len(word) < 6 else word[:-3] + "or"
+
+
+def _replace_consonant_re_suffix(match: re.Match) -> str:
+    word = match.group(0)
+    return word if len(word) < 5 else word[:-2] + "er"
+
+
+def _replace_ogue_suffix(match: re.Match) -> str:
+    word = match.group(0)
+    return word if len(word) < 6 else word[:-4] + "og"
+
+
+_BRITISH_SPELLING_PATTERNS = [
+    # -isation/-izations (e.g. organisation -> organization, visualisation -> visualization)
+    (re.compile(r"isation(s?)\b"), r"ization\1"),
+    # -ise/-yse -> -ize/-yze verb suffix (e.g. organise -> organize, analyse -> analyze)
+    (re.compile(r"\b\w*[iy]se\b"), _replace_ise_yse_suffix),
+    # -our -> -or (e.g. colour -> color, behaviour -> behavior)
+    (re.compile(r"\b\w*our\b"), _replace_our_suffix),
+    # consonant + -re -> consonant + -er (e.g. centre -> center, metre -> meter);
+    # restricted to a preceding consonant so vowel+re words like "more", "before",
+    # "explore" (an unrelated spelling pattern) are left untouched.
+    (re.compile(r"\b\w*[^aeiou\s]re\b"), _replace_consonant_re_suffix),
+    # -ogue -> -og (e.g. catalogue -> catalog, dialogue -> dialog)
+    (re.compile(r"\b\w*ogue\b"), _replace_ogue_suffix),
+]
+
+
+def _normalize_british_spelling(text: str) -> str:
+    """Canonicalize common British spelling patterns to American spelling for
+    internal comparison purposes only. Assumes text is already lowercased."""
+    normalized = text
+    for pattern, replacement in _BRITISH_SPELLING_PATTERNS:
+        normalized = pattern.sub(replacement, normalized)
+    return normalized
+
 
 def _normalize_skill(skill: str) -> str:
-    """Normalize casing and a conservative set of unambiguous skill abbreviations
-    and term synonyms."""
+    """Normalize casing, British/American spelling, and a conservative set of
+    unambiguous skill abbreviations and term synonyms."""
     normalized = skill.strip().lower()
+    normalized = _normalize_british_spelling(normalized)
     for abbreviation, expanded in _SKILL_ABBREVIATIONS.items():
         normalized = re.sub(rf"\b{re.escape(abbreviation)}\b", expanded, normalized)
     for synonym, canonical in _SKILL_SYNONYMS.items():

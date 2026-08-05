@@ -685,3 +685,79 @@ def test_synonym_table_does_not_cause_false_positive_business_analysis_match():
 
     assert result.matched_skills == []
     assert result.missing_skills == ["Business Analysis"]
+
+
+def test_british_spelling_data_visualisation_matches_american_requirement():
+    candidate = CandidateProfile(
+        name="Priya Nair",
+        skills=["Data Visualisation"],
+        experience_years=3.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text="Experienced in Data Visualisation using Power BI and Tableau.",
+    )
+    job = JobRequirements(
+        title="Data Analyst",
+        required_skills=["Data Visualization"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Analytics",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == ["Data Visualization"]
+    assert result.missing_skills == []
+
+
+def test_british_spelling_organisation_skill_matches_american_organization_requirement():
+    candidate = CandidateProfile(
+        name="James Whitfield",
+        skills=["Organisation"],
+        experience_years=3.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text="Strong Organisation skills developed across cross-functional projects.",
+    )
+    job = JobRequirements(
+        title="Operations Coordinator",
+        required_skills=["Organization"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Operations",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == ["Organization"]
+    assert result.missing_skills == []
+
+
+def test_british_spelling_normalization_does_not_collide_unrelated_words():
+    """"Tour Management" and "Tor Network Security" are genuinely different,
+    unrelated skills that both happen to end in an "-our"/"or"-adjacent
+    pattern; the length-gated spelling normalization must not collapse them
+    into a false match (e.g. "tour" -> "tor")."""
+    candidate = CandidateProfile(
+        name="Concert Producer",
+        skills=["Tour Management", "Logistics Planning"],
+        experience_years=4.0,
+        education="Bachelor of Arts",
+        certifications=[],
+        raw_resume_text="Managed multi-city tour management and logistics planning for live events.",
+    )
+    job = JobRequirements(
+        title="Security Engineer",
+        required_skills=["Tor Network Security"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Security",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == []
+    assert result.missing_skills == ["Tor Network Security"]
