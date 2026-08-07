@@ -4,6 +4,7 @@ Stage 7: Output / Reporting Dashboard API.
 
 import os
 import secrets
+import time
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,12 @@ if not RECRUITER_PASSWORD:
     print("WARNING: RECRUITER_PASSWORD environment variable not set. Defaulting to 'changeme'.")
 
 VALID_TOKENS: set[str] = set()
+
+# Adjustable estimates used to compute the batch "Time & Cost Savings" summary.
+# These are industry-typical assumptions, not measured facts about any
+# particular recruiter or team -- adjust them if better local data is available.
+AVG_MANUAL_REVIEW_MINUTES = 8
+AVG_RECRUITER_HOURLY_COST_INR = 400
 
 app = FastAPI(title="HR Screener Dashboard")
 
@@ -228,7 +235,7 @@ async def batch_evaluate(
     files: list[UploadFile] = File(...),
     x_recruiter_token: str | None = Header(default=None, alias="X-Recruiter-Token"),
     authorization: str | None = Header(default=None, alias="Authorization"),
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     _require_recruiter_token(x_recruiter_token, authorization)
 
     job_record = JOB_STORE.get(job_id)
@@ -239,6 +246,7 @@ async def batch_evaluate(
 
     job: JobRequirements = job_record["job"]
     batch_results: list[dict[str, Any]] = []
+    batch_start_time = time.perf_counter()
     try:
         for file in files:
             text = await _extract_resume_text(file)
@@ -261,7 +269,25 @@ async def batch_evaluate(
     except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return sorted(batch_results, key=lambda item: item["match_score"], reverse=True)
+    actual_processing_seconds = time.perf_counter() - batch_start_time
+
+    candidates_screened = len(batch_results)
+    estimated_time_saved_hours = (candidates_screened * AVG_MANUAL_REVIEW_MINUTES) / 60.0
+    estimated_cost_saved_inr = estimated_time_saved_hours * AVG_RECRUITER_HOURLY_COST_INR
+
+    summary = {
+        "candidates_screened": candidates_screened,
+        "estimated_time_saved_hours": round(estimated_time_saved_hours, 2),
+        "estimated_cost_saved_inr": round(estimated_cost_saved_inr, 2),
+        "actual_processing_seconds": round(actual_processing_seconds, 2),
+        "avg_manual_review_minutes_assumption": AVG_MANUAL_REVIEW_MINUTES,
+        "avg_recruiter_hourly_cost_inr_assumption": AVG_RECRUITER_HOURLY_COST_INR,
+    }
+
+    return {
+        "results": sorted(batch_results, key=lambda item: item["match_score"], reverse=True),
+        "summary": summary,
+    }
 
 
 @app.post("/recruiter/login")

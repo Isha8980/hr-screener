@@ -878,6 +878,43 @@
         color: var(--text-main);
       }
 
+      /* Batch Time & Cost Savings summary */
+      .savings-summary-card {
+        margin-bottom: 16px;
+      }
+
+      .savings-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+
+      .savings-stat {
+        background-color: var(--bg-card-subtle);
+        border: 1px solid var(--border-subtle);
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+      }
+
+      .savings-stat-value {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--primary);
+      }
+
+      .savings-stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .savings-summary-note {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        line-height: 1.4;
+        margin-top: 12px;
+      }
+
       /* ATS formatting box */
       .ats-score-summary {
         display: flex;
@@ -1537,6 +1574,7 @@
                 </div>
               </div>
 
+              <div id="batchSavingsSummary"></div>
               <div id="batchResults"></div>
             </div>
           </div>
@@ -2017,6 +2055,7 @@
       const batchScreenBtn = document.getElementById('batchScreenBtn');
       const batchLoading = document.getElementById('batchLoading');
       const batchResults = document.getElementById('batchResults');
+      const batchSavingsSummary = document.getElementById('batchSavingsSummary');
 
       function updateBatchFileSummary() {
         const files = Array.from(batchResumeFiles.files || []);
@@ -2117,6 +2156,40 @@
           </tr>`;
       }
 
+      function renderSavingsSummary(summary) {
+        if (!summary) {
+          batchSavingsSummary.innerHTML = '';
+          return;
+        }
+
+        const minutesPerResume = summary.avg_manual_review_minutes_assumption;
+        const hourlyCostInr = summary.avg_recruiter_hourly_cost_inr_assumption;
+
+        batchSavingsSummary.innerHTML = `
+          <div class="card savings-summary-card">
+            <div class="section-card-title">Time &amp; Cost Savings</div>
+            <div class="savings-summary-grid">
+              <div class="savings-stat">
+                <div class="savings-stat-value">${summary.candidates_screened}</div>
+                <div class="savings-stat-label">Candidates Screened</div>
+              </div>
+              <div class="savings-stat">
+                <div class="savings-stat-value">${summary.estimated_time_saved_hours}h</div>
+                <div class="savings-stat-label">Est. Manual Review Time Saved</div>
+              </div>
+              <div class="savings-stat">
+                <div class="savings-stat-value">₹${summary.estimated_cost_saved_inr.toLocaleString('en-IN')}</div>
+                <div class="savings-stat-label">Est. Recruiter Cost Saved</div>
+              </div>
+              <div class="savings-stat">
+                <div class="savings-stat-value">${summary.actual_processing_seconds}s</div>
+                <div class="savings-stat-label">Actual Processing Time</div>
+              </div>
+            </div>
+            <p class="savings-summary-note">*Time and cost figures are estimates based on industry-typical assumptions (~${minutesPerResume} min of manual review per resume, ~₹${hourlyCostInr}/hour recruiter cost) and are adjustable -- not measured, audited facts.</p>
+          </div>`;
+      }
+
       function renderBatchResults(results) {
         if (!results.length) {
           batchResults.innerHTML = '<div class="card"><p class="muted">No candidates were returned.</p></div>';
@@ -2175,6 +2248,7 @@
         batchScreenBtn.disabled = true;
         batchLoading.style.display = 'flex';
         batchResults.innerHTML = '';
+        batchSavingsSummary.innerHTML = '';
         try {
           const jobResponse = await fetch('/jobs', {
             method: 'POST',
@@ -2202,8 +2276,10 @@
             throw new Error('Recruiter session expired. Please log in again.');
           }
           if (!response.ok) throw new Error(data.detail || 'Batch screening failed.');
-          renderBatchResults(data);
+          renderSavingsSummary(data.summary);
+          renderBatchResults(data.results);
         } catch (err) {
+          batchSavingsSummary.innerHTML = '';
           batchResults.innerHTML = `<div class="error-msg-text">${escapeHtml(err.message || 'Batch screening failed.')}</div>`;
         } finally {
           batchScreenBtn.disabled = false;

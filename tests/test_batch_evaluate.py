@@ -1,7 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.dashboard import CANDIDATE_STORE, JOB_STORE, QUEUE_STORE, VALID_TOKENS, app
+from app.dashboard import (
+    AVG_MANUAL_REVIEW_MINUTES,
+    AVG_RECRUITER_HOURLY_COST_INR,
+    CANDIDATE_STORE,
+    JOB_STORE,
+    QUEUE_STORE,
+    VALID_TOKENS,
+    app,
+)
 from app.schemas import CandidateProfile, ExplanationResult, FairnessCheckResult, JobRequirements, MatchResult
 
 
@@ -124,7 +132,8 @@ def test_batch_evaluate_ranks_multiple_resumes_and_returns_specific_questions(cl
     )
 
     assert response.status_code == 200
-    results = response.json()
+    payload = response.json()
+    results = payload["results"]
     assert [result["candidate_name"] for result in results] == ["Ava", "Ben"]
     assert [result["match_score"] for result in results] == [88.0, 52.0]
     assert results[0]["matched_skills_count"] == 2
@@ -134,3 +143,34 @@ def test_batch_evaluate_ranks_multiple_resumes_and_returns_specific_questions(cl
     assert results[1]["interview_questions"] is None
     assert results[0]["detail"]["interview_questions"] == results[0]["interview_questions"]
     assert results[1]["detail"]["interview_questions"] is None
+
+
+def test_batch_evaluate_includes_time_and_cost_savings_summary(client, mocked_batch_pipeline):
+    job_id = create_job(client)
+    token = "batch-test-token"
+    VALID_TOKENS.add(token)
+
+    response = client.post(
+        "/batch-evaluate",
+        data={"job_id": job_id},
+        files=[
+            ("files", ("ben.txt", b"Ben resume", "text/plain")),
+            ("files", ("ava.txt", b"Ava resume", "text/plain")),
+        ],
+        headers={"X-Recruiter-Token": token},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    summary = payload["summary"]
+
+    assert summary["candidates_screened"] == 2
+    assert summary["avg_manual_review_minutes_assumption"] == AVG_MANUAL_REVIEW_MINUTES
+    assert summary["avg_recruiter_hourly_cost_inr_assumption"] == AVG_RECRUITER_HOURLY_COST_INR
+
+    raw_hours = (2 * AVG_MANUAL_REVIEW_MINUTES) / 60.0
+    assert summary["estimated_time_saved_hours"] == round(raw_hours, 2)
+    assert summary["estimated_cost_saved_inr"] == round(raw_hours * AVG_RECRUITER_HOURLY_COST_INR, 2)
+
+    assert isinstance(summary["actual_processing_seconds"], (int, float))
+    assert summary["actual_processing_seconds"] >= 0
