@@ -136,6 +136,7 @@ def test_dashboard_routes_with_mocked_openai(monkeypatch, client):
     assert evaluate_response.status_code == 200
     assert evaluate_response.json()["routing_decision"] == "needs_review"
     assert evaluate_response.json()["growth_recommendation"]["suggested_project"]
+    assert evaluate_response.json()["raw_resume_text"] == "Backend engineer resume"
 
     login_response = client.post("/recruiter/login", json={"password": "test-password-123"})
     assert login_response.status_code == 200

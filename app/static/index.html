@@ -1074,6 +1074,52 @@
         margin-top: 8px;
       }
 
+      /* View Resume toggle + panel */
+      .btn-outline-sm {
+        background-color: transparent;
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.82rem;
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--primary);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+
+      .btn-outline-sm:hover {
+        background-color: var(--primary-soft);
+      }
+
+      .resume-view-content {
+        margin-top: 14px;
+      }
+
+      .resume-text-view {
+        margin: 0;
+        padding: 16px;
+        background-color: var(--bg-card-subtle);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: inherit;
+        font-size: 0.85rem;
+        line-height: 1.65;
+        color: var(--text-main);
+        max-height: 420px;
+        overflow-y: auto;
+      }
+
+      .resume-file-frame {
+        display: block;
+        width: 100%;
+        height: 560px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        background-color: var(--bg-card-subtle);
+      }
+
       @media (max-width: 768px) {
         body {
           overflow-x: hidden;
@@ -1524,6 +1570,24 @@
                 </div>
                 <div id="formattingContent"></div>
               </div>
+
+              <!-- View Resume Card -->
+              <div id="resumeViewSection" class="card hidden">
+                <div class="section-card-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span>Candidate Resume</span>
+                </div>
+                <button id="resumeViewToggleBtn" class="btn-outline-sm" type="button" aria-expanded="false">View Resume</button>
+                <div id="resumeViewContent" class="resume-view-content hidden">
+                  <iframe id="resumeViewFrame" class="resume-file-frame hidden" title="Candidate resume PDF"></iframe>
+                  <pre id="resumeViewText" class="resume-text-view hidden"></pre>
+                </div>
+              </div>
             </div>
           </section>
           </div>
@@ -1697,6 +1761,20 @@
       const growthTextEl = document.getElementById('growthText');
       const formattingSection = document.getElementById('formattingSection');
       const formattingContent = document.getElementById('formattingContent');
+      const resumeViewSection = document.getElementById('resumeViewSection');
+      const resumeViewToggleBtn = document.getElementById('resumeViewToggleBtn');
+      const resumeViewContent = document.getElementById('resumeViewContent');
+      const resumeViewFrame = document.getElementById('resumeViewFrame');
+      const resumeViewText = document.getElementById('resumeViewText');
+
+      if (resumeViewToggleBtn) {
+        resumeViewToggleBtn.addEventListener('click', () => {
+          const expanding = resumeViewContent.classList.contains('hidden');
+          resumeViewContent.classList.toggle('hidden');
+          resumeViewToggleBtn.textContent = expanding ? 'Hide Resume' : 'View Resume';
+          resumeViewToggleBtn.setAttribute('aria-expanded', String(expanding));
+        });
+      }
 
       function escapeHtml(str) {
         if (!str) return '';
@@ -1786,6 +1864,9 @@
           const routing = evaluationData.routing_decision || 'needs_review';
           const growth = evaluationData.growth_recommendation;
           const ats = evaluationData.resume_formatting_check;
+          const rawResumeText = evaluationData.raw_resume_text || '';
+          const hasResumeFile = Boolean(evaluationData.has_resume_file);
+          const resumeCandidateId = evaluationData.candidate_id;
 
           // Render Match Score Circular Donut Ring
           const scoreVal = Math.min(100, Math.max(0, Math.round(match.match_score || 0)));
@@ -1915,6 +1996,29 @@
             }
           } else {
             formattingSection.classList.add('hidden');
+          }
+
+          // Render View Resume Card (collapsed by default on each new analysis).
+          // Prefer the real uploaded PDF (preserves layout); fall back to the
+          // extracted raw text only when no PDF was uploaded (e.g. pasted text).
+          if (resumeViewSection && (hasResumeFile || rawResumeText)) {
+            if (hasResumeFile && resumeCandidateId) {
+              resumeViewFrame.src = `/resume-file/${encodeURIComponent(resumeCandidateId)}`;
+              resumeViewFrame.classList.remove('hidden');
+              resumeViewText.classList.add('hidden');
+              resumeViewText.textContent = '';
+            } else {
+              resumeViewText.textContent = rawResumeText;
+              resumeViewText.classList.remove('hidden');
+              resumeViewFrame.classList.add('hidden');
+              resumeViewFrame.src = '';
+            }
+            resumeViewSection.classList.remove('hidden');
+            resumeViewContent.classList.add('hidden');
+            resumeViewToggleBtn.textContent = 'View Resume';
+            resumeViewToggleBtn.setAttribute('aria-expanded', 'false');
+          } else if (resumeViewSection) {
+            resumeViewSection.classList.add('hidden');
           }
 
           resultCard.style.display = 'block';
@@ -2117,6 +2221,21 @@
             <div class="section-card-title">Suggested Interview Questions</div>
             <ol class="interview-question-list">${questions.map(question => `<li>${escapeHtml(question)}</li>`).join('')}</ol>
           </div>` : '';
+        const resumeText = detail.raw_resume_text || '';
+        const hasResumeFile = Boolean(detail.has_resume_file);
+        // Prefer the real uploaded PDF (preserves layout); fall back to the
+        // extracted raw text only when no PDF was uploaded (e.g. pasted text).
+        const resumeBodyHtml = hasResumeFile && detail.candidate_id
+          ? `<iframe class="resume-file-frame" title="Candidate resume PDF" data-resume-src="/resume-file/${encodeURIComponent(detail.candidate_id)}"></iframe>`
+          : `<pre class="resume-text-view">${escapeHtml(resumeText)}</pre>`;
+        const resumeHtml = (hasResumeFile || resumeText) ? `
+          <div class="card">
+            <div class="section-card-title">Candidate Resume</div>
+            <button class="btn-outline-sm batch-resume-toggle-btn" type="button" data-resume-index="${index}" aria-expanded="false">View Resume</button>
+            <div id="batchResumeContent-${index}" class="resume-view-content hidden">
+              ${resumeBodyHtml}
+            </div>
+          </div>` : '';
 
         return `
           <tr id="batchDetail-${index}" class="batch-detail-row hidden">
@@ -2150,6 +2269,7 @@
                     <ul class="formatting-list" style="margin-top:12px;">${formattingItems}</ul>
                   </div>
                   ${questionsHtml}
+                  ${resumeHtml}
                 </div>
               </div>
             </td>
@@ -2232,6 +2352,28 @@
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
               toggle();
+            }
+          });
+        });
+
+        batchResults.querySelectorAll('.batch-resume-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', event => {
+            event.stopPropagation();
+            const content = document.getElementById(`batchResumeContent-${btn.dataset.resumeIndex}`);
+            const expanding = content.classList.contains('hidden');
+            content.classList.toggle('hidden');
+            btn.textContent = expanding ? 'Hide Resume' : 'View Resume';
+            btn.setAttribute('aria-expanded', String(expanding));
+
+            // Lazy-load the PDF only when first expanded, so batch rows don't
+            // all fetch their resume files up front. The data-resume-src
+            // attribute is removed once consumed so this only fires once.
+            if (expanding) {
+              const frame = content.querySelector('iframe[data-resume-src]');
+              if (frame) {
+                frame.src = frame.dataset.resumeSrc;
+                frame.removeAttribute('data-resume-src');
+              }
             }
           });
         });

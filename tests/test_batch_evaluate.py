@@ -143,6 +143,8 @@ def test_batch_evaluate_ranks_multiple_resumes_and_returns_specific_questions(cl
     assert results[1]["interview_questions"] is None
     assert results[0]["detail"]["interview_questions"] == results[0]["interview_questions"]
     assert results[1]["detail"]["interview_questions"] is None
+    assert results[0]["detail"]["raw_resume_text"] == "Ava resume"
+    assert results[1]["detail"]["raw_resume_text"] == "Ben resume"
 
 
 def test_batch_evaluate_includes_time_and_cost_savings_summary(client, mocked_batch_pipeline):

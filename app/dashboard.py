@@ -10,7 +10,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -48,6 +48,12 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 JOB_STORE: dict[str, dict[str, Any]] = {}
 CANDIDATE_STORE: dict[str, dict[str, Any]] = {}
 QUEUE_STORE: dict[str, dict[str, Any]] = {}
+
+# Original uploaded PDF bytes, keyed by candidate_id, so "View Resume" can render
+# the real document (preserving layout) instead of extracted, layout-losing text.
+# Only populated for PDF uploads -- plain-text submissions have no file to store.
+# In-memory only, like the stores above: cleared on server restart, not persisted.
+RESUME_FILE_STORE: dict[str, bytes] = {}
 
 
 class JobTextRequest(BaseModel):
@@ -90,19 +96,27 @@ def _require_recruiter_token(x_recruiter_token: str | None, authorization: str |
         raise HTTPException(status_code=401, detail="Invalid or missing recruiter token.")
 
 
-async def _extract_resume_text(file: UploadFile) -> str:
+async def _extract_resume_text(file: UploadFile) -> tuple[str, bytes | None]:
+    """Extract resume text from an uploaded file.
+
+    Returns (text, pdf_bytes) -- pdf_bytes is the original file content when the
+    upload was a PDF (so it can be stored for "View Resume"), or None for .txt
+    uploads, which have no original document to preserve.
+    """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file selected.")
 
     filename = file.filename.lower()
+    pdf_bytes: bytes | None = None
     if filename.endswith(".txt"):
         try:
             text = (await file.read()).decode("utf-8")
         except UnicodeDecodeError as exc:
             raise HTTPException(status_code=400, detail=f"'{file.filename}' is not valid UTF-8 text.") from exc
     elif filename.endswith(".pdf"):
+        pdf_bytes = await file.read()
         try:
-            text = extract_text_from_pdf(await file.read())
+            text = extract_text_from_pdf(pdf_bytes)
         except (ValueError, RuntimeError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     else:
@@ -110,7 +124,7 @@ async def _extract_resume_text(file: UploadFile) -> str:
 
     if not text or not text.strip():
         raise HTTPException(status_code=400, detail="Resume text cannot be empty.")
-    return text
+    return text, pdf_bytes
 
 
 def _run_evaluation(
@@ -142,6 +156,9 @@ def _run_evaluation(
         "growth_recommendation": growth_recommendation.model_dump() if growth_recommendation else None,
         "resume_formatting_check": analyze_ats_readability(candidate.raw_resume_text or ""),
         "interview_questions": interview_questions,
+        "raw_resume_text": candidate.raw_resume_text,
+        "candidate_id": candidate_id,
+        "has_resume_file": candidate_id in RESUME_FILE_STORE,
     }
 
     if routing_decision in {"needs_review", "flagged_for_bias", "auto_rejected"}:
@@ -197,7 +214,7 @@ def create_candidate(payload: CandidateTextRequest) -> dict[str, Any]:
 
 @app.post("/candidates/upload")
 async def upload_candidate(file: UploadFile) -> dict[str, Any]:
-    text = await _extract_resume_text(file)
+    text, pdf_bytes = await _extract_resume_text(file)
 
     try:
         parsed_candidate = parse_resume(text)
@@ -206,7 +223,22 @@ async def upload_candidate(file: UploadFile) -> dict[str, Any]:
 
     candidate_id = str(len(CANDIDATE_STORE) + 1)
     CANDIDATE_STORE[candidate_id] = {"candidate": parsed_candidate}
+    if pdf_bytes is not None:
+        RESUME_FILE_STORE[candidate_id] = pdf_bytes
     return {"candidate_id": candidate_id, "candidate": parsed_candidate.model_dump()}
+
+
+@app.get("/resume-file/{candidate_id}")
+def get_resume_file(candidate_id: str) -> Response:
+    """Serve the original uploaded PDF for a candidate, so "View Resume" can
+    render the real document instead of extracted (layout-losing) text.
+    Only available for candidates uploaded as PDF; text-submitted candidates
+    have no stored file.
+    """
+    pdf_bytes = RESUME_FILE_STORE.get(candidate_id)
+    if pdf_bytes is None:
+        raise HTTPException(status_code=404, detail=f"No resume file found for candidate '{candidate_id}'.")
+    return Response(content=pdf_bytes, media_type="application/pdf")
 
 
 @app.post("/evaluate")
@@ -249,10 +281,12 @@ async def batch_evaluate(
     batch_start_time = time.perf_counter()
     try:
         for file in files:
-            text = await _extract_resume_text(file)
+            text, pdf_bytes = await _extract_resume_text(file)
             candidate = parse_resume(text)
             candidate_id = str(len(CANDIDATE_STORE) + 1)
             CANDIDATE_STORE[candidate_id] = {"candidate": candidate}
+            if pdf_bytes is not None:
+                RESUME_FILE_STORE[candidate_id] = pdf_bytes
 
             detail, match_result = _run_evaluation(job, candidate, candidate_id)
             batch_results.append(
