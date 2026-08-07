@@ -35,7 +35,7 @@ _SKILL_SYNONYM_GROUPS = [
     ["business intelligence"],
     # Soft skill phrasing
     ["communication skills", "communication", "interpersonal skills", "verbal and written communication"],
-    ["analytical skills", "analytical thinking", "analytical ability"],
+    ["analytical skills", "analytical thinking", "analytical ability", "structured thinking", "statistical analysis", "data-driven analysis"],
     ["problem-solving skills", "problem solving", "problem-solving ability"],
     ["stakeholder management", "stakeholder engagement", "client management"],
     ["project management", "project coordination"],

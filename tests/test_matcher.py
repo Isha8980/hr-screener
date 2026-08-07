@@ -761,3 +761,27 @@ def test_british_spelling_normalization_does_not_collide_unrelated_words():
 
     assert result.matched_skills == []
     assert result.missing_skills == ["Tor Network Security"]
+
+
+def test_structured_thinking_skill_matches_analytical_skills_requirement():
+    candidate = CandidateProfile(
+        name="Riya Desai",
+        skills=["Structured Thinking"],
+        experience_years=3.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text="Consultant known for Structured Thinking in framing ambiguous business problems.",
+    )
+    job = JobRequirements(
+        title="Business Consultant",
+        required_skills=["Analytical Skills"],
+        preferred_skills=[],
+        min_experience_years=1.0,
+        education_level="Bachelor's Degree",
+        job_family="Consulting",
+    )
+
+    result = match_candidate(candidate, job)
+
+    assert result.matched_skills == ["Analytical Skills"]
+    assert result.missing_skills == []
