@@ -11,7 +11,5 @@ services:
         sync: false
       - key: RECRUITER_PASSWORD
         sync: false
-      - key: SMTP_EMAIL
-        sync: false
-      - key: SMTP_APP_PASSWORD
+      - key: RESEND_API_KEY
         sync: false

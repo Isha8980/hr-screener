@@ -4,7 +4,7 @@ Unit tests for the POST /send-email endpoint in app/dashboard.py
 
 import json
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -47,12 +47,10 @@ def test_send_email_requires_recruiter_auth(client):
     assert response.status_code == 401
 
 
-@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com", "SMTP_APP_PASSWORD": "app-password"})
-@patch("app.emailer.smtplib.SMTP")
-def test_send_email_succeeds_and_logs_for_candidate_with_email(mock_smtp_class, client, tmp_path, monkeypatch):
+@patch.dict(os.environ, {"RESEND_API_KEY": "re_test_key"})
+@patch("app.emailer.resend.Emails.send")
+def test_send_email_succeeds_and_logs_for_candidate_with_email(mock_send, client, tmp_path, monkeypatch):
     monkeypatch.setattr("app.emailer.DATA_DIR", tmp_path)
-    mock_server = MagicMock()
-    mock_smtp_class.return_value.__enter__.return_value = mock_server
 
     _seed_candidate("1", email="ava@example.com")
     token = "recruiter-token"
@@ -69,10 +67,10 @@ def test_send_email_succeeds_and_logs_for_candidate_with_email(mock_smtp_class, 
     assert payload["status"] == "sent"
     assert payload["recipient"] == "ava@example.com"
     assert "Backend Engineer" in payload["subject"]
-    mock_server.sendmail.assert_called_once()
-    sendmail_args = mock_server.sendmail.call_args[0]
-    assert sendmail_args[1] == ["ava@example.com"]
-    assert "Ava Patel" in sendmail_args[2]
+    mock_send.assert_called_once()
+    send_params = mock_send.call_args[0][0]
+    assert send_params["to"] == ["ava@example.com"]
+    assert "Ava Patel" in send_params["text"]
 
     log_path = tmp_path / "sent_email_log.json"
     assert log_path.exists()
@@ -83,12 +81,10 @@ def test_send_email_succeeds_and_logs_for_candidate_with_email(mock_smtp_class, 
     assert "timestamp" in entries[0]
 
 
-@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com", "SMTP_APP_PASSWORD": "app-password"})
-@patch("app.emailer.smtplib.SMTP")
-def test_send_email_allows_subject_and_body_overrides(mock_smtp_class, client, tmp_path, monkeypatch):
+@patch.dict(os.environ, {"RESEND_API_KEY": "re_test_key"})
+@patch("app.emailer.resend.Emails.send")
+def test_send_email_allows_subject_and_body_overrides(mock_send, client, tmp_path, monkeypatch):
     monkeypatch.setattr("app.emailer.DATA_DIR", tmp_path)
-    mock_server = MagicMock()
-    mock_smtp_class.return_value.__enter__.return_value = mock_server
 
     _seed_candidate("1", email="ava@example.com")
     token = "recruiter-token"
@@ -108,9 +104,9 @@ def test_send_email_allows_subject_and_body_overrides(mock_smtp_class, client, t
 
     assert response.status_code == 200
     assert response.json()["subject"] == "Custom subject line"
-    sendmail_args = mock_server.sendmail.call_args[0]
-    assert "Custom subject line" in sendmail_args[2]
-    assert "Custom body text" in sendmail_args[2]
+    send_params = mock_send.call_args[0][0]
+    assert send_params["subject"] == "Custom subject line"
+    assert send_params["text"] == "Custom body text"
 
 
 def test_send_email_returns_clear_error_for_candidate_without_email(client):

@@ -4,11 +4,13 @@ Unit tests for app/emailer.py
 
 import json
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
+import resend
 
 from app.emailer import (
+    RESEND_FROM_ADDRESS,
     build_interview_invite_email,
     build_rejection_email,
     log_sent_email,
@@ -16,58 +18,49 @@ from app.emailer import (
 )
 
 
-@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com", "SMTP_APP_PASSWORD": "app-password"})
-@patch("app.emailer.smtplib.SMTP")
-def test_send_email_uses_gmail_smtp_with_starttls(mock_smtp_class):
-    mock_server = MagicMock()
-    mock_smtp_class.return_value.__enter__.return_value = mock_server
-
+@patch.dict(os.environ, {"RESEND_API_KEY": "re_test_key"})
+@patch("app.emailer.resend.Emails.send")
+def test_send_email_sends_via_resend_api(mock_send):
     send_email("candidate@example.com", "Subject line", "Body text")
 
-    mock_smtp_class.assert_called_once_with("smtp.gmail.com", 587, timeout=15)
-    mock_server.starttls.assert_called_once()
-    mock_server.login.assert_called_once_with("recruiter@example.com", "app-password")
-    mock_server.sendmail.assert_called_once()
-    call_args = mock_server.sendmail.call_args
-    assert call_args[0][0] == "recruiter@example.com"
-    assert call_args[0][1] == ["candidate@example.com"]
-    assert "Subject line" in call_args[0][2]
-    assert "Body text" in call_args[0][2]
+    assert resend.api_key == "re_test_key"
+    mock_send.assert_called_once_with(
+        {
+            "from": RESEND_FROM_ADDRESS,
+            "to": ["candidate@example.com"],
+            "subject": "Subject line",
+            "text": "Body text",
+        }
+    )
 
 
 @patch.dict(os.environ, {}, clear=True)
-def test_send_email_raises_clear_error_when_smtp_email_missing():
-    with pytest.raises(ValueError, match="SMTP_EMAIL"):
+def test_send_email_raises_clear_error_when_api_key_missing():
+    with pytest.raises(ValueError, match="RESEND_API_KEY"):
         send_email("candidate@example.com", "Subject", "Body")
 
 
-@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com"}, clear=True)
-def test_send_email_raises_clear_error_when_smtp_app_password_missing():
-    with pytest.raises(ValueError, match="SMTP_APP_PASSWORD"):
-        send_email("candidate@example.com", "Subject", "Body")
-
-
-@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com", "SMTP_APP_PASSWORD": "app-password"})
-@patch("app.emailer.smtplib.SMTP")
-def test_send_email_wraps_smtp_failures_in_runtime_error(mock_smtp_class):
-    import smtplib
-
-    mock_server = MagicMock()
-    mock_server.login.side_effect = smtplib.SMTPAuthenticationError(535, b"bad credentials")
-    mock_smtp_class.return_value.__enter__.return_value = mock_server
+@patch.dict(os.environ, {"RESEND_API_KEY": "re_test_key"})
+@patch("app.emailer.resend.Emails.send")
+def test_send_email_wraps_resend_api_errors_in_runtime_error(mock_send):
+    mock_send.side_effect = resend.exceptions.ResendError(
+        code=422,
+        error_type="validation_error",
+        message="Invalid `to` field",
+        suggested_action="Check the recipient address.",
+    )
 
     with pytest.raises(RuntimeError, match="Failed to send email"):
         send_email("candidate@example.com", "Subject", "Body")
 
 
-@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com", "SMTP_APP_PASSWORD": "app-password"})
-@patch("app.emailer.smtplib.SMTP")
-def test_send_email_wraps_blocked_connection_timeout_in_runtime_error(mock_smtp_class):
-    """A hosting platform silently blocking outbound SMTP raises a socket-level
-    OSError (e.g. TimeoutError), not an smtplib.SMTPException -- this must still
-    be caught and turned into a clear RuntimeError, not left to hang or propagate
-    as an unhandled exception."""
-    mock_smtp_class.side_effect = TimeoutError("timed out")
+@patch.dict(os.environ, {"RESEND_API_KEY": "re_test_key"})
+@patch("app.emailer.resend.Emails.send")
+def test_send_email_wraps_network_failures_in_runtime_error(mock_send):
+    """The Resend SDK itself wraps network-level failures (e.g. DNS/connection
+    errors) in a RuntimeError -- this must still surface as a clear RuntimeError
+    from send_email, not be left unhandled."""
+    mock_send.side_effect = RuntimeError("Request failed: connection error")
 
     with pytest.raises(RuntimeError, match="Failed to send email"):
         send_email("candidate@example.com", "Subject", "Body")

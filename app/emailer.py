@@ -4,28 +4,28 @@ Recruiter-initiated candidate email sending and templates.
 
 import json
 import os
-import smtplib
 from datetime import datetime, timezone
-from email.mime.text import MIMEText
 from pathlib import Path
 
+import resend
 from dotenv import load_dotenv
 
 load_dotenv()
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
-# Some hosting platforms (e.g. Render) block outbound SMTP connections entirely.
-# Without an explicit timeout, a blocked/blackholed connection hangs the request
-# indefinitely instead of failing with a clear error -- bound it so a network-level
-# block surfaces as a fast, actionable RuntimeError rather than an infinite hang.
-SMTP_CONNECT_TIMEOUT_SECONDS = 15
+# Resend's shared sandbox sender -- works immediately with no domain verification.
+# Once a custom domain is verified with Resend, swap this for an address on that
+# domain (e.g. "recruiting@yourcompany.com") for better deliverability/branding.
+RESEND_FROM_ADDRESS = "onboarding@resend.dev"
 
 
 def send_email(to_email: str, subject: str, body: str) -> None:
-    """Send a plain-text email via Gmail SMTP (STARTTLS).
+    """Send a plain-text email via the Resend HTTP API.
+
+    Uses Resend's HTTPS API rather than raw SMTP because many hosting platforms
+    (e.g. Render's free tier) block outbound SMTP connections entirely; a normal
+    HTTPS API call is not affected by that restriction.
 
     Args:
         to_email: Recipient email address.
@@ -33,31 +33,26 @@ def send_email(to_email: str, subject: str, body: str) -> None:
         body: Plain-text email body.
 
     Raises:
-        ValueError: If SMTP_EMAIL or SMTP_APP_PASSWORD environment variables are not set.
-        RuntimeError: If the SMTP send fails.
+        ValueError: If the RESEND_API_KEY environment variable is not set.
+        RuntimeError: If the Resend API call fails.
     """
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_app_password = os.getenv("SMTP_APP_PASSWORD")
-    if not smtp_email:
-        raise ValueError("SMTP_EMAIL environment variable is not set.")
-    if not smtp_app_password:
-        raise ValueError("SMTP_APP_PASSWORD environment variable is not set.")
+    api_key = os.getenv("RESEND_API_KEY")
+    if not api_key:
+        raise ValueError("RESEND_API_KEY environment variable is not set.")
 
-    message = MIMEText(body)
-    message["Subject"] = subject
-    message["From"] = smtp_email
-    message["To"] = to_email
+    resend.api_key = api_key
 
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_CONNECT_TIMEOUT_SECONDS) as server:
-            server.starttls()
-            server.login(smtp_email, smtp_app_password)
-            server.sendmail(smtp_email, [to_email], message.as_string())
-    except (smtplib.SMTPException, OSError) as exc:
-        raise RuntimeError(
-            f"Failed to send email to '{to_email}': {exc}. If this is a timeout, the hosting "
-            f"platform may be blocking outbound SMTP connections."
-        ) from exc
+        resend.Emails.send(
+            {
+                "from": RESEND_FROM_ADDRESS,
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            }
+        )
+    except (resend.exceptions.ResendError, RuntimeError) as exc:
+        raise RuntimeError(f"Failed to send email to '{to_email}': {exc}") from exc
 
 
 def build_interview_invite_email(candidate_name: str, job_title: str) -> tuple[str, str]:
