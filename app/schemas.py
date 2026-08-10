@@ -23,6 +23,7 @@ class CandidateProfile(BaseModel):
     education: str = Field(..., description="Candidate education background")
     certifications: List[str] = Field(default_factory=list, description="List of candidate certifications")
     raw_resume_text: str = Field("", description="Raw resume text")
+    email: Optional[str] = Field(None, description="Candidate email address, if present in the resume")
 
 
 class MatchResult(BaseModel):

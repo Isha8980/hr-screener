@@ -1120,6 +1120,95 @@
         background-color: var(--bg-card-subtle);
       }
 
+      /* Send Email modal */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1000;
+      }
+
+      .modal-panel {
+        width: 100%;
+        max-width: 560px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-panel .section-card-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .modal-close-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+
+      .modal-close-btn:hover {
+        color: var(--text-main);
+      }
+
+      .modal-panel select,
+      .modal-panel input[type="text"] {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-input);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 0.9rem;
+      }
+
+      .modal-panel select:focus,
+      .modal-panel input[type="text"]:focus,
+      .modal-panel textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+
+      .modal-panel textarea {
+        min-height: 220px;
+      }
+
+      .email-modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .email-modal-status {
+        margin-top: 14px;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+      }
+
+      .email-modal-status.success {
+        background-color: var(--success-bg);
+        border: 1px solid var(--success-border);
+        color: var(--success);
+      }
+
+      .email-modal-status.error {
+        background-color: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        color: var(--danger);
+      }
+
       @media (max-width: 768px) {
         body {
           overflow-x: hidden;
@@ -1588,6 +1677,18 @@
                   <pre id="resumeViewText" class="resume-text-view hidden"></pre>
                 </div>
               </div>
+
+              <!-- Send Email Card (recruiter-gated) -->
+              <div id="sendEmailSection" class="card hidden">
+                <div class="section-card-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  <span>Candidate Outreach</span>
+                </div>
+                <button id="sendEmailBtn" class="btn-outline-sm" type="button">Send Email</button>
+              </div>
             </div>
           </section>
           </div>
@@ -1679,6 +1780,46 @@
       </div>
     </div>
 
+    <!-- Send Email Modal -->
+    <div id="emailModalOverlay" class="modal-overlay hidden">
+      <div class="modal-panel card">
+        <div class="section-card-title">
+          <span>Send Email<span id="emailModalCandidateName"></span></span>
+          <button id="emailModalCloseBtn" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
+        </div>
+
+        <div id="emailModalNoEmail" class="hidden">
+          <p class="muted">No email found for this candidate.</p>
+          <div class="email-modal-actions">
+            <button id="emailModalNoEmailCloseBtn" class="btn-outline-sm" type="button">Close</button>
+          </div>
+        </div>
+
+        <div id="emailModalForm">
+          <div class="field">
+            <label for="emailTemplateSelect">Template</label>
+            <select id="emailTemplateSelect">
+              <option value="interview_invite">Interview Invite</option>
+              <option value="rejection">Rejection</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="emailSubjectInput">Subject</label>
+            <input id="emailSubjectInput" type="text" />
+          </div>
+          <div class="field">
+            <label for="emailBodyInput">Body</label>
+            <textarea id="emailBodyInput"></textarea>
+          </div>
+          <div class="email-modal-actions">
+            <button id="emailSendBtn" class="btn-primary-sm" type="button">Send</button>
+            <button id="emailCancelBtn" class="btn-outline-sm" type="button">Cancel</button>
+          </div>
+          <div id="emailModalStatus" class="email-modal-status hidden"></div>
+        </div>
+      </div>
+    </div>
+
     <script>
       // Theme Toggle Logic
       const themeToggleBtn = document.getElementById('themeToggle');
@@ -1746,6 +1887,9 @@
       }
 
       // Main Elements
+      let currentJobTitle = '';
+      let currentBatchJobTitle = '';
+      let currentCandidateContext = null;
       const analyzeBtn = document.getElementById('analyzeBtn');
       const loading = document.getElementById('loading');
       const resultCard = document.getElementById('resultCard');
@@ -1773,6 +1917,150 @@
           resumeViewContent.classList.toggle('hidden');
           resumeViewToggleBtn.textContent = expanding ? 'Hide Resume' : 'View Resume';
           resumeViewToggleBtn.setAttribute('aria-expanded', String(expanding));
+        });
+      }
+
+      // Send Email (single evaluation)
+      const sendEmailSection = document.getElementById('sendEmailSection');
+      const sendEmailBtn = document.getElementById('sendEmailBtn');
+      if (sendEmailBtn) {
+        sendEmailBtn.addEventListener('click', () => openEmailModal(currentCandidateContext));
+      }
+
+      // Send Email Modal (shared by single evaluation and batch screening)
+      const emailModalOverlay = document.getElementById('emailModalOverlay');
+      const emailModalCandidateName = document.getElementById('emailModalCandidateName');
+      const emailModalCloseBtn = document.getElementById('emailModalCloseBtn');
+      const emailModalNoEmail = document.getElementById('emailModalNoEmail');
+      const emailModalNoEmailCloseBtn = document.getElementById('emailModalNoEmailCloseBtn');
+      const emailModalForm = document.getElementById('emailModalForm');
+      const emailTemplateSelect = document.getElementById('emailTemplateSelect');
+      const emailSubjectInput = document.getElementById('emailSubjectInput');
+      const emailBodyInput = document.getElementById('emailBodyInput');
+      const emailSendBtn = document.getElementById('emailSendBtn');
+      const emailCancelBtn = document.getElementById('emailCancelBtn');
+      const emailModalStatus = document.getElementById('emailModalStatus');
+
+      let emailModalContext = null;
+
+      function buildInterviewInviteEmailPreview(candidateName, jobTitle) {
+        const subject = `Interview Invitation: ${jobTitle}`;
+        const body = `Hi ${candidateName},\n\nThank you for applying for the ${jobTitle} position. We were impressed with your background and would love to schedule an interview to learn more about you.\n\nPlease reply to this email with a few times that work well for you over the next week, and we'll get something set up.\n\nLooking forward to speaking with you.\n\nBest regards,\nThe Hiring Team`;
+        return { subject, body };
+      }
+
+      function buildRejectionEmailPreview(candidateName, jobTitle) {
+        const subject = `Update on Your Application: ${jobTitle}`;
+        const body = `Hi ${candidateName},\n\nThank you for taking the time to apply for the ${jobTitle} position and for sharing your background with us. After careful consideration, we've decided to move forward with other candidates whose experience more closely matches what we need for this particular role.\n\nThis was not an easy decision, and we genuinely appreciate the effort you put into your application. We'd encourage you to apply again for future roles that match your skills.\n\nWe wish you all the best in your job search.\n\nWarm regards,\nThe Hiring Team`;
+        return { subject, body };
+      }
+
+      function fillEmailTemplateFields() {
+        if (!emailModalContext) return;
+        const { candidateName, jobTitle } = emailModalContext;
+        const preview = emailTemplateSelect.value === 'rejection'
+          ? buildRejectionEmailPreview(candidateName, jobTitle)
+          : buildInterviewInviteEmailPreview(candidateName, jobTitle);
+        emailSubjectInput.value = preview.subject;
+        emailBodyInput.value = preview.body;
+      }
+
+      function closeEmailModal() {
+        emailModalOverlay.classList.add('hidden');
+        emailModalContext = null;
+        emailModalStatus.classList.add('hidden');
+        emailModalStatus.textContent = '';
+        emailModalStatus.classList.remove('success', 'error');
+        emailSendBtn.disabled = false;
+        emailSendBtn.textContent = 'Send';
+      }
+
+      function openEmailModal(context) {
+        if (!recruiterToken) {
+          alert('Please log in as a recruiter (Batch Screening or Review Queue tab) to send emails.');
+          return;
+        }
+        if (!context || !context.candidateId) {
+          alert('Candidate information is not available yet.');
+          return;
+        }
+
+        emailModalContext = context;
+        emailModalCandidateName.textContent = context.candidateName ? ` — ${context.candidateName}` : '';
+        emailModalStatus.classList.add('hidden');
+        emailModalStatus.textContent = '';
+        emailModalStatus.classList.remove('success', 'error');
+        emailSendBtn.disabled = false;
+        emailSendBtn.textContent = 'Send';
+
+        if (!context.candidateEmail) {
+          emailModalNoEmail.classList.remove('hidden');
+          emailModalForm.classList.add('hidden');
+        } else {
+          emailModalNoEmail.classList.add('hidden');
+          emailModalForm.classList.remove('hidden');
+          emailTemplateSelect.value = 'interview_invite';
+          fillEmailTemplateFields();
+        }
+
+        emailModalOverlay.classList.remove('hidden');
+      }
+
+      if (emailTemplateSelect) emailTemplateSelect.addEventListener('change', fillEmailTemplateFields);
+      if (emailModalCloseBtn) emailModalCloseBtn.addEventListener('click', closeEmailModal);
+      if (emailModalNoEmailCloseBtn) emailModalNoEmailCloseBtn.addEventListener('click', closeEmailModal);
+      if (emailCancelBtn) emailCancelBtn.addEventListener('click', closeEmailModal);
+      if (emailModalOverlay) {
+        emailModalOverlay.addEventListener('click', event => {
+          if (event.target === emailModalOverlay) closeEmailModal();
+        });
+      }
+
+      if (emailSendBtn) {
+        emailSendBtn.addEventListener('click', async () => {
+          if (!emailModalContext) return;
+          const subject = emailSubjectInput.value.trim();
+          const body = emailBodyInput.value.trim();
+          if (!subject || !body) {
+            emailModalStatus.textContent = 'Subject and body cannot be empty.';
+            emailModalStatus.classList.remove('hidden', 'success');
+            emailModalStatus.classList.add('error');
+            return;
+          }
+
+          emailSendBtn.disabled = true;
+          emailSendBtn.textContent = 'Sending...';
+          emailModalStatus.classList.add('hidden');
+
+          try {
+            const response = await fetch('/send-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Recruiter-Token': recruiterToken
+              },
+              body: JSON.stringify({
+                candidate_id: emailModalContext.candidateId,
+                template_type: emailTemplateSelect.value,
+                job_title: emailModalContext.jobTitle || 'this role',
+                subject,
+                body
+              })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || 'Failed to send email.');
+
+            emailModalStatus.textContent = `Email sent to ${data.recipient}.`;
+            emailModalStatus.classList.remove('hidden', 'error');
+            emailModalStatus.classList.add('success');
+            emailSendBtn.textContent = 'Sent';
+          } catch (err) {
+            emailModalStatus.textContent = err.message || 'Failed to send email.';
+            emailModalStatus.classList.remove('hidden', 'success');
+            emailModalStatus.classList.add('error');
+            emailSendBtn.disabled = false;
+            emailSendBtn.textContent = 'Send';
+          }
         });
       }
 
@@ -1814,6 +2102,7 @@
           if (!jobResponse.ok) {
             throw new Error(jobData.detail || 'Failed to create job');
           }
+          currentJobTitle = jobData.job?.title || 'this role';
 
           // 2. Post Candidate File or Text
           if (selectedFile) {
@@ -1867,6 +2156,8 @@
           const rawResumeText = evaluationData.raw_resume_text || '';
           const hasResumeFile = Boolean(evaluationData.has_resume_file);
           const resumeCandidateId = evaluationData.candidate_id;
+          const candidateEmail = evaluationData.candidate_email || null;
+          const candidateName = match.candidate_name || 'Candidate';
 
           // Render Match Score Circular Donut Ring
           const scoreVal = Math.min(100, Math.max(0, Math.round(match.match_score || 0)));
@@ -2019,6 +2310,17 @@
             resumeViewToggleBtn.setAttribute('aria-expanded', 'false');
           } else if (resumeViewSection) {
             resumeViewSection.classList.add('hidden');
+          }
+
+          // Render Send Email Card
+          if (sendEmailSection) {
+            currentCandidateContext = {
+              candidateId: resumeCandidateId,
+              candidateName: candidateName,
+              candidateEmail: candidateEmail,
+              jobTitle: currentJobTitle
+            };
+            sendEmailSection.classList.remove('hidden');
           }
 
           resultCard.style.display = 'block';
@@ -2236,6 +2538,14 @@
               ${resumeBodyHtml}
             </div>
           </div>` : '';
+        const sendEmailHtml = `
+          <div class="card">
+            <div class="section-card-title">Candidate Outreach</div>
+            <button class="btn-outline-sm batch-send-email-btn" type="button"
+              data-candidate-id="${escapeHtml(detail.candidate_id || '')}"
+              data-candidate-name="${escapeHtml(item.candidate_name || '')}"
+              data-candidate-email="${escapeHtml(detail.candidate_email || '')}">Send Email</button>
+          </div>`;
 
         return `
           <tr id="batchDetail-${index}" class="batch-detail-row hidden">
@@ -2270,6 +2580,7 @@
                   </div>
                   ${questionsHtml}
                   ${resumeHtml}
+                  ${sendEmailHtml}
                 </div>
               </div>
             </td>
@@ -2377,6 +2688,18 @@
             }
           });
         });
+
+        batchResults.querySelectorAll('.batch-send-email-btn').forEach(btn => {
+          btn.addEventListener('click', event => {
+            event.stopPropagation();
+            openEmailModal({
+              candidateId: btn.dataset.candidateId,
+              candidateName: btn.dataset.candidateName,
+              candidateEmail: btn.dataset.candidateEmail || null,
+              jobTitle: currentBatchJobTitle
+            });
+          });
+        });
       }
 
       batchScreenBtn.addEventListener('click', async () => {
@@ -2399,6 +2722,7 @@
           });
           const jobData = await jobResponse.json();
           if (!jobResponse.ok) throw new Error(jobData.detail || 'Failed to create job.');
+          currentBatchJobTitle = jobData.job?.title || 'this role';
 
           const formData = new FormData();
           formData.append('job_id', jobData.job_id);

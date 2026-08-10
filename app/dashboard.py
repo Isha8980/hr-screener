@@ -6,7 +6,7 @@ import os
 import secrets
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.ats_check import analyze_ats_readability
+from app.emailer import build_interview_invite_email, build_rejection_email, log_sent_email, send_email
 from app.explain import generate_explanation
 from app.fairness import run_fairness_check
 from app.growth import generate_interview_questions, suggest_growth_project
@@ -78,6 +79,20 @@ class OverrideRequest(BaseModel):
     original_decision: str
     recruiter_decision: str
     reason: str
+
+
+class SendEmailRequest(BaseModel):
+    candidate_id: str
+    template_type: Literal["interview_invite", "rejection"]
+    job_title: str = "this role"
+    subject: str | None = None
+    body: str | None = None
+
+
+_EMAIL_TEMPLATE_BUILDERS = {
+    "interview_invite": build_interview_invite_email,
+    "rejection": build_rejection_email,
+}
 
 
 def _get_recruiter_token(x_recruiter_token: str | None, authorization: str | None) -> str | None:
@@ -159,6 +174,7 @@ def _run_evaluation(
         "raw_resume_text": candidate.raw_resume_text,
         "candidate_id": candidate_id,
         "has_resume_file": candidate_id in RESUME_FILE_STORE,
+        "candidate_email": candidate.email,
     }
 
     if routing_decision in {"needs_review", "flagged_for_bias", "auto_rejected"}:
@@ -353,6 +369,38 @@ def override_candidate(payload: OverrideRequest) -> dict[str, Any]:
         reason=payload.reason,
     )
     return {"status": "logged", "recruiter_decision": payload.recruiter_decision}
+
+
+@app.post("/send-email")
+def send_candidate_email(
+    payload: SendEmailRequest,
+    x_recruiter_token: str | None = Header(default=None, alias="X-Recruiter-Token"),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+) -> dict[str, Any]:
+    _require_recruiter_token(x_recruiter_token, authorization)
+
+    candidate_record = CANDIDATE_STORE.get(payload.candidate_id)
+    if not candidate_record:
+        raise HTTPException(status_code=404, detail=f"Candidate with id '{payload.candidate_id}' not found.")
+
+    candidate: CandidateProfile = candidate_record["candidate"]
+    if not candidate.email:
+        raise HTTPException(status_code=400, detail=f"No email found for candidate '{candidate.name}'.")
+
+    default_subject, default_body = _EMAIL_TEMPLATE_BUILDERS[payload.template_type](candidate.name, payload.job_title)
+    subject = payload.subject or default_subject
+    body = payload.body or default_body
+
+    try:
+        send_email(candidate.email, subject, body)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    log_sent_email(recipient=candidate.email, subject=subject, template_type=payload.template_type)
+
+    return {"status": "sent", "recipient": candidate.email, "subject": subject}
 
 
 def get_dashboard_summary() -> dict:

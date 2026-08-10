@@ -122,6 +122,63 @@ def test_parse_resume_includes_generic_sounding_skill_when_explicitly_listed(moc
 
 @patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
 @patch("app.resume_parser.OpenAI")
+def test_parse_resume_extracts_email_when_present(mock_openai):
+    resume_text = (
+        "Sam Okafor\n"
+        "sam.okafor@example.com\n"
+        "Software developer with 2 years of professional experience.\n"
+        "Skills: Python, FastAPI, PostgreSQL\n"
+    )
+
+    expected_profile = CandidateProfile(
+        name="Sam Okafor",
+        skills=["Python", "FastAPI", "PostgreSQL"],
+        experience_years=2.0,
+        education="Bachelor of Science",
+        certifications=[],
+        raw_resume_text=resume_text,
+        email="sam.okafor@example.com",
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = expected_profile
+    mock_client = MagicMock()
+    mock_client.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+    mock_openai.return_value = mock_client
+
+    profile = parse_resume(resume_text)
+
+    assert profile.email == "sam.okafor@example.com"
+
+
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.resume_parser.OpenAI")
+def test_parse_resume_leaves_email_none_when_absent(mock_openai, sample_resume_text):
+    """The sample resume fixture has no email address; the parser must not
+    invent one -- email should come through as None."""
+    expected_profile = CandidateProfile(
+        name="Sam Okafor",
+        skills=["Python", "FastAPI", "PostgreSQL", "Git", "Docker", "Linux", "REST APIs"],
+        experience_years=2.0,
+        education="Bachelor of Science in Information Technology, Lakeside University, 2023",
+        certifications=[],
+        raw_resume_text=sample_resume_text,
+        email=None,
+    )
+
+    mock_parsed_choice = MagicMock()
+    mock_parsed_choice.message.parsed = expected_profile
+    mock_client = MagicMock()
+    mock_client.beta.chat.completions.parse.return_value.choices = [mock_parsed_choice]
+    mock_openai.return_value = mock_client
+
+    profile = parse_resume(sample_resume_text)
+
+    assert profile.email is None
+
+
+@patch.dict(os.environ, {"OPENAI_API_KEY": "fake-key"})
+@patch("app.resume_parser.OpenAI")
 def test_parse_resume_overwrites_model_raw_text_with_original_input(mock_openai):
     original_text = "  Name\n\t• Built an ATS parser\n- Preserved whitespace  \n"
     model_profile = CandidateProfile(
