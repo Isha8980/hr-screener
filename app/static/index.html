@@ -2028,9 +2028,34 @@
             return;
           }
 
+          // Re-validate right before sending -- these are re-checked here (not just
+          // when the modal opened) because a malformed/missing value passed into
+          // fetch()'s URL, headers, or body can throw an opaque browser-native
+          // TypeError ("The string did not match the expected pattern.") instead of
+          // a clear, catchable error from our own code.
+          const candidateId = emailModalContext.candidateId;
+          if (typeof recruiterToken !== 'string' || !recruiterToken) {
+            emailModalStatus.textContent = 'Your recruiter session has expired. Please log in again and retry.';
+            emailModalStatus.classList.remove('hidden', 'success');
+            emailModalStatus.classList.add('error');
+            return;
+          }
+          if (typeof candidateId !== 'string' || !candidateId) {
+            emailModalStatus.textContent = 'Candidate information is missing. Please close this and try again.';
+            emailModalStatus.classList.remove('hidden', 'success');
+            emailModalStatus.classList.add('error');
+            return;
+          }
+
           emailSendBtn.disabled = true;
           emailSendBtn.textContent = 'Sending...';
           emailModalStatus.classList.add('hidden');
+
+          // Guard against the request hanging indefinitely (e.g. a hosting
+          // platform silently blocking the backend's outbound SMTP connection)
+          // so the button never gets stuck on "Sending..." forever.
+          const abortController = new AbortController();
+          const timeoutId = setTimeout(() => abortController.abort(), 25000);
 
           try {
             const response = await fetch('/send-email', {
@@ -2040,26 +2065,40 @@
                 'X-Recruiter-Token': recruiterToken
               },
               body: JSON.stringify({
-                candidate_id: emailModalContext.candidateId,
-                template_type: emailTemplateSelect.value,
-                job_title: emailModalContext.jobTitle || 'this role',
+                candidate_id: candidateId,
+                template_type: String(emailTemplateSelect.value),
+                job_title: String(emailModalContext.jobTitle || 'this role'),
                 subject,
                 body
-              })
+              }),
+              signal: abortController.signal
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.detail || 'Failed to send email.');
+            if (!response.ok) {
+              const detail = Array.isArray(data.detail)
+                ? data.detail.map(item => item.msg || JSON.stringify(item)).join('; ')
+                : data.detail;
+              throw new Error(detail || `Failed to send email (status ${response.status}).`);
+            }
 
             emailModalStatus.textContent = `Email sent to ${data.recipient}.`;
             emailModalStatus.classList.remove('hidden', 'error');
             emailModalStatus.classList.add('success');
             emailSendBtn.textContent = 'Sent';
           } catch (err) {
-            emailModalStatus.textContent = err.message || 'Failed to send email.';
+            const timedOut = err.name === 'AbortError';
+            const isBrowserNetworkError = err instanceof TypeError;
+            emailModalStatus.textContent = timedOut
+              ? 'Sending timed out. The server may be unable to reach the email provider.'
+              : isBrowserNetworkError
+                ? 'A network error occurred sending this request. Please check your connection and try again.'
+                : (err.message || 'Failed to send email.');
             emailModalStatus.classList.remove('hidden', 'success');
             emailModalStatus.classList.add('error');
             emailSendBtn.disabled = false;
             emailSendBtn.textContent = 'Send';
+          } finally {
+            clearTimeout(timeoutId);
           }
         });
       }

@@ -17,6 +17,11 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
+# Some hosting platforms (e.g. Render) block outbound SMTP connections entirely.
+# Without an explicit timeout, a blocked/blackholed connection hangs the request
+# indefinitely instead of failing with a clear error -- bound it so a network-level
+# block surfaces as a fast, actionable RuntimeError rather than an infinite hang.
+SMTP_CONNECT_TIMEOUT_SECONDS = 15
 
 
 def send_email(to_email: str, subject: str, body: str) -> None:
@@ -44,12 +49,15 @@ def send_email(to_email: str, subject: str, body: str) -> None:
     message["To"] = to_email
 
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_CONNECT_TIMEOUT_SECONDS) as server:
             server.starttls()
             server.login(smtp_email, smtp_app_password)
             server.sendmail(smtp_email, [to_email], message.as_string())
-    except smtplib.SMTPException as exc:
-        raise RuntimeError(f"Failed to send email to '{to_email}': {exc}") from exc
+    except (smtplib.SMTPException, OSError) as exc:
+        raise RuntimeError(
+            f"Failed to send email to '{to_email}': {exc}. If this is a timeout, the hosting "
+            f"platform may be blocking outbound SMTP connections."
+        ) from exc
 
 
 def build_interview_invite_email(candidate_name: str, job_title: str) -> tuple[str, str]:

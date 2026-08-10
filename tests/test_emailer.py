@@ -24,7 +24,7 @@ def test_send_email_uses_gmail_smtp_with_starttls(mock_smtp_class):
 
     send_email("candidate@example.com", "Subject line", "Body text")
 
-    mock_smtp_class.assert_called_once_with("smtp.gmail.com", 587)
+    mock_smtp_class.assert_called_once_with("smtp.gmail.com", 587, timeout=15)
     mock_server.starttls.assert_called_once()
     mock_server.login.assert_called_once_with("recruiter@example.com", "app-password")
     mock_server.sendmail.assert_called_once()
@@ -55,6 +55,19 @@ def test_send_email_wraps_smtp_failures_in_runtime_error(mock_smtp_class):
     mock_server = MagicMock()
     mock_server.login.side_effect = smtplib.SMTPAuthenticationError(535, b"bad credentials")
     mock_smtp_class.return_value.__enter__.return_value = mock_server
+
+    with pytest.raises(RuntimeError, match="Failed to send email"):
+        send_email("candidate@example.com", "Subject", "Body")
+
+
+@patch.dict(os.environ, {"SMTP_EMAIL": "recruiter@example.com", "SMTP_APP_PASSWORD": "app-password"})
+@patch("app.emailer.smtplib.SMTP")
+def test_send_email_wraps_blocked_connection_timeout_in_runtime_error(mock_smtp_class):
+    """A hosting platform silently blocking outbound SMTP raises a socket-level
+    OSError (e.g. TimeoutError), not an smtplib.SMTPException -- this must still
+    be caught and turned into a clear RuntimeError, not left to hang or propagate
+    as an unhandled exception."""
+    mock_smtp_class.side_effect = TimeoutError("timed out")
 
     with pytest.raises(RuntimeError, match="Failed to send email"):
         send_email("candidate@example.com", "Subject", "Body")
