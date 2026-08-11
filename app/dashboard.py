@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.ats_check import analyze_ats_readability
+from app.batch_chat import answer_batch_question
 from app.emailer import build_interview_invite_email, build_rejection_email, log_sent_email, send_email
 from app.explain import generate_explanation
 from app.fairness import run_fairness_check
@@ -56,6 +57,11 @@ QUEUE_STORE: dict[str, dict[str, Any]] = {}
 # In-memory only, like the stores above: cleared on server restart, not persisted.
 RESUME_FILE_STORE: dict[str, bytes] = {}
 
+# Completed batch screening runs, keyed by batch_id, so the recruiter batch-chat
+# feature can answer follow-up questions without the frontend re-uploading the
+# full results payload on every message. In-memory only, cleared on restart.
+BATCH_STORE: dict[str, dict[str, Any]] = {}
+
 
 class JobTextRequest(BaseModel):
     text: str
@@ -93,6 +99,11 @@ _EMAIL_TEMPLATE_BUILDERS = {
     "interview_invite": build_interview_invite_email,
     "rejection": build_rejection_email,
 }
+
+
+class BatchChatRequest(BaseModel):
+    batch_id: str
+    question: str
 
 
 def _get_recruiter_token(x_recruiter_token: str | None, authorization: str | None) -> str | None:
@@ -334,8 +345,14 @@ async def batch_evaluate(
         "avg_recruiter_hourly_cost_inr_assumption": AVG_RECRUITER_HOURLY_COST_INR,
     }
 
+    sorted_results = sorted(batch_results, key=lambda item: item["match_score"], reverse=True)
+
+    batch_id = str(len(BATCH_STORE) + 1)
+    BATCH_STORE[batch_id] = {"job_title": job.title, "results": sorted_results}
+
     return {
-        "results": sorted(batch_results, key=lambda item: item["match_score"], reverse=True),
+        "batch_id": batch_id,
+        "results": sorted_results,
         "summary": summary,
     }
 
@@ -401,6 +418,28 @@ def send_candidate_email(
     log_sent_email(recipient=candidate.email, subject=subject, template_type=payload.template_type)
 
     return {"status": "sent", "recipient": candidate.email, "subject": subject}
+
+
+@app.post("/batch-chat")
+def batch_chat(
+    payload: BatchChatRequest,
+    x_recruiter_token: str | None = Header(default=None, alias="X-Recruiter-Token"),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+) -> dict[str, Any]:
+    _require_recruiter_token(x_recruiter_token, authorization)
+
+    batch_record = BATCH_STORE.get(payload.batch_id)
+    if not batch_record:
+        raise HTTPException(status_code=404, detail=f"Batch with id '{payload.batch_id}' not found.")
+
+    try:
+        answer = answer_batch_question(batch_record["results"], batch_record["job_title"], payload.question)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"answer": answer}
 
 
 def get_dashboard_summary() -> dict:

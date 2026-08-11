@@ -915,6 +915,102 @@
         margin-top: 12px;
       }
 
+      /* Batch Chat */
+      .batch-chat-card {
+        margin-top: 16px;
+      }
+
+      .batch-chat-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .chat-suggestion-chip {
+        background-color: var(--bg-card-subtle);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, color 0.15s ease;
+      }
+
+      .chat-suggestion-chip:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .batch-chat-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 340px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+      }
+
+      .batch-chat-empty {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        font-style: italic;
+      }
+
+      .batch-chat-message {
+        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .batch-chat-message.user {
+        align-self: flex-end;
+        background-color: var(--primary);
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
+      }
+
+      .batch-chat-message.assistant {
+        align-self: flex-start;
+        background-color: var(--bg-card-subtle);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-main);
+        border-bottom-left-radius: 4px;
+      }
+
+      .batch-chat-message.assistant.error {
+        background-color: var(--danger-bg);
+        border-color: var(--danger-border);
+        color: var(--danger);
+      }
+
+      .batch-chat-input-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .batch-chat-input-row input[type="text"] {
+        flex: 1;
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-input);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 0.9rem;
+      }
+
+      .batch-chat-input-row input[type="text"]:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+
       /* ATS formatting box */
       .ats-score-summary {
         display: flex;
@@ -1741,6 +1837,32 @@
 
               <div id="batchSavingsSummary"></div>
               <div id="batchResults"></div>
+
+              <!-- Batch Chat -->
+              <div id="batchChatSection" class="card batch-chat-card hidden">
+                <div class="section-card-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                  </svg>
+                  <span>Ask About These Results</span>
+                </div>
+                <div class="batch-chat-suggestions">
+                  <button type="button" class="chat-suggestion-chip" data-question="Who scored above 70%?">Who scored above 70%?</button>
+                  <button type="button" class="chat-suggestion-chip" data-question="Which candidates are missing SQL?">Which candidates are missing SQL?</button>
+                  <button type="button" class="chat-suggestion-chip" data-question="Who has the most matched skills?">Who has the most matched skills?</button>
+                </div>
+                <div id="batchChatMessages" class="batch-chat-messages">
+                  <p class="batch-chat-empty">Ask a question about this batch of candidates -- answers are based only on the screening results above.</p>
+                </div>
+                <div id="batchChatLoading" class="loading-box" style="margin-bottom:12px;">
+                  <div class="spinner"></div>
+                  <span>Thinking...</span>
+                </div>
+                <div class="batch-chat-input-row">
+                  <input id="batchChatInput" type="text" placeholder="Ask a question about these candidates..." />
+                  <button id="batchChatSendBtn" class="btn-primary-sm" type="button">Send</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1890,6 +2012,7 @@
       let currentJobTitle = '';
       let currentBatchJobTitle = '';
       let currentCandidateContext = null;
+      let currentBatchId = null;
       const analyzeBtn = document.getElementById('analyzeBtn');
       const loading = document.getElementById('loading');
       const resultCard = document.getElementById('resultCard');
@@ -2741,6 +2864,92 @@
         });
       }
 
+      // Batch Chat
+      const batchChatSection = document.getElementById('batchChatSection');
+      const batchChatMessages = document.getElementById('batchChatMessages');
+      const batchChatLoading = document.getElementById('batchChatLoading');
+      const batchChatInput = document.getElementById('batchChatInput');
+      const batchChatSendBtn = document.getElementById('batchChatSendBtn');
+
+      function resetBatchChat(batchId) {
+        currentBatchId = batchId;
+        if (!batchChatSection) return;
+        batchChatMessages.innerHTML = '<p class="batch-chat-empty">Ask a question about this batch of candidates -- answers are based only on the screening results above.</p>';
+        batchChatInput.value = '';
+        batchChatSection.classList.remove('hidden');
+      }
+
+      function hideBatchChat() {
+        currentBatchId = null;
+        if (batchChatSection) batchChatSection.classList.add('hidden');
+      }
+
+      function appendBatchChatMessage(role, text, isError) {
+        const emptyState = batchChatMessages.querySelector('.batch-chat-empty');
+        if (emptyState) emptyState.remove();
+
+        const bubble = document.createElement('div');
+        bubble.className = `batch-chat-message ${role}` + (isError ? ' error' : '');
+        bubble.textContent = text;
+        batchChatMessages.appendChild(bubble);
+        batchChatMessages.scrollTop = batchChatMessages.scrollHeight;
+      }
+
+      async function sendBatchChatMessage(question) {
+        const trimmed = (question || '').trim();
+        if (!trimmed) return;
+        if (!currentBatchId) {
+          appendBatchChatMessage('assistant', 'No batch results are loaded yet. Run a batch screening first.', true);
+          return;
+        }
+        if (!recruiterToken) {
+          alert('Please log in as a recruiter to use batch chat.');
+          return;
+        }
+
+        appendBatchChatMessage('user', trimmed);
+        batchChatInput.value = '';
+        batchChatSendBtn.disabled = true;
+        batchChatInput.disabled = true;
+        batchChatLoading.style.display = 'flex';
+
+        try {
+          const response = await fetch('/batch-chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Recruiter-Token': recruiterToken
+            },
+            body: JSON.stringify({ batch_id: currentBatchId, question: trimmed })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || 'Failed to get an answer.');
+          appendBatchChatMessage('assistant', data.answer);
+        } catch (err) {
+          appendBatchChatMessage('assistant', err.message || 'Failed to get an answer.', true);
+        } finally {
+          batchChatSendBtn.disabled = false;
+          batchChatInput.disabled = false;
+          batchChatLoading.style.display = 'none';
+          batchChatInput.focus();
+        }
+      }
+
+      if (batchChatSendBtn) {
+        batchChatSendBtn.addEventListener('click', () => sendBatchChatMessage(batchChatInput.value));
+      }
+      if (batchChatInput) {
+        batchChatInput.addEventListener('keydown', event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendBatchChatMessage(batchChatInput.value);
+          }
+        });
+      }
+      document.querySelectorAll('.chat-suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', () => sendBatchChatMessage(chip.dataset.question));
+      });
+
       batchScreenBtn.addEventListener('click', async () => {
         const jobText = document.getElementById('batchJobDescription').value.trim();
         const files = Array.from(batchResumeFiles.files || []);
@@ -2753,6 +2962,7 @@
         batchLoading.style.display = 'flex';
         batchResults.innerHTML = '';
         batchSavingsSummary.innerHTML = '';
+        hideBatchChat();
         try {
           const jobResponse = await fetch('/jobs', {
             method: 'POST',
@@ -2783,9 +2993,11 @@
           if (!response.ok) throw new Error(data.detail || 'Batch screening failed.');
           renderSavingsSummary(data.summary);
           renderBatchResults(data.results);
+          resetBatchChat(data.batch_id);
         } catch (err) {
           batchSavingsSummary.innerHTML = '';
           batchResults.innerHTML = `<div class="error-msg-text">${escapeHtml(err.message || 'Batch screening failed.')}</div>`;
+          hideBatchChat();
         } finally {
           batchScreenBtn.disabled = false;
           batchLoading.style.display = 'none';
