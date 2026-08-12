@@ -1011,6 +1011,126 @@
         box-shadow: 0 0 0 3px var(--primary-soft);
       }
 
+      /* Candidate-facing floating chat widget (single-evaluation view only) */
+      .candidate-chat-widget {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 900;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .candidate-chat-bubble {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: #ffffff;
+        border: none;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+      }
+
+      .candidate-chat-bubble:hover {
+        transform: scale(1.06);
+      }
+
+      .candidate-chat-greeting {
+        position: relative;
+        max-width: 230px;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        font-size: 0.85rem;
+        line-height: 1.45;
+        padding: 12px 26px 12px 14px;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        margin-bottom: 12px;
+        animation: fadeIn 0.25s ease;
+      }
+
+      .candidate-chat-greeting::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        right: 22px;
+        width: 12px;
+        height: 12px;
+        background-color: var(--bg-card);
+        border-right: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        transform: rotate(45deg);
+      }
+
+      .candidate-chat-greeting-close {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 4px;
+      }
+
+      .candidate-chat-greeting-close:hover {
+        color: var(--text-main);
+      }
+
+      .candidate-chat-window {
+        width: 340px;
+        max-width: calc(100vw - 48px);
+        max-height: min(75vh, 540px);
+        display: flex;
+        flex-direction: column;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 16px;
+        animation: fadeIn 0.15s ease;
+      }
+
+      .candidate-chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        margin-bottom: 12px;
+      }
+
+      .candidate-chat-header-subtitle {
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .candidate-chat-window .batch-chat-messages {
+        max-height: 260px;
+      }
+
+      @media (max-width: 480px) {
+        .candidate-chat-widget {
+          bottom: 16px;
+          right: 16px;
+        }
+
+        .candidate-chat-window {
+          width: calc(100vw - 32px);
+        }
+      }
+
       /* ATS formatting box */
       .ats-score-summary {
         display: flex;
@@ -1755,36 +1875,6 @@
                 </div>
                 <div id="formattingContent"></div>
               </div>
-
-              <!-- View Resume Card -->
-              <div id="resumeViewSection" class="card hidden">
-                <div class="section-card-title">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                  </svg>
-                  <span>Candidate Resume</span>
-                </div>
-                <button id="resumeViewToggleBtn" class="btn-outline-sm" type="button" aria-expanded="false">View Resume</button>
-                <div id="resumeViewContent" class="resume-view-content hidden">
-                  <iframe id="resumeViewFrame" class="resume-file-frame hidden" title="Candidate resume PDF"></iframe>
-                  <pre id="resumeViewText" class="resume-text-view hidden"></pre>
-                </div>
-              </div>
-
-              <!-- Send Email Card (recruiter-gated) -->
-              <div id="sendEmailSection" class="card hidden">
-                <div class="section-card-title">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                  <span>Candidate Outreach</span>
-                </div>
-                <button id="sendEmailBtn" class="btn-outline-sm" type="button">Send Email</button>
-              </div>
             </div>
           </section>
           </div>
@@ -1844,7 +1934,7 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                   </svg>
-                  <span>Ask About These Results</span>
+                  <span>Ask Sage About These Results</span>
                 </div>
                 <div class="batch-chat-suggestions">
                   <button type="button" class="chat-suggestion-chip" data-question="Who scored above 70%?">Who scored above 70%?</button>
@@ -1852,14 +1942,14 @@
                   <button type="button" class="chat-suggestion-chip" data-question="Who has the most matched skills?">Who has the most matched skills?</button>
                 </div>
                 <div id="batchChatMessages" class="batch-chat-messages">
-                  <p class="batch-chat-empty">Ask a question about this batch of candidates -- answers are based only on the screening results above.</p>
+                  <p class="batch-chat-empty">Ask Sage a question about this batch of candidates -- answers are based only on the screening results above.</p>
                 </div>
                 <div id="batchChatLoading" class="loading-box" style="margin-bottom:12px;">
                   <div class="spinner"></div>
-                  <span>Thinking...</span>
+                  <span>Sage is thinking...</span>
                 </div>
                 <div class="batch-chat-input-row">
-                  <input id="batchChatInput" type="text" placeholder="Ask a question about these candidates..." />
+                  <input id="batchChatInput" type="text" placeholder="Ask Sage a question about these candidates..." />
                   <button id="batchChatSendBtn" class="btn-primary-sm" type="button">Send</button>
                 </div>
               </div>
@@ -1899,6 +1989,42 @@
             </div>
           </div>
         </main>
+      </div>
+    </div>
+
+    <!-- Candidate-Facing "Sage" Chat Widget (single-evaluation view only) -->
+    <div id="candidateChatWidget" class="candidate-chat-widget hidden">
+      <div id="candidateChatGreeting" class="candidate-chat-greeting hidden">
+        <button id="candidateChatGreetingClose" class="candidate-chat-greeting-close" type="button" aria-label="Dismiss">&times;</button>
+        <span>👋 Hi, I'm Sage! I can explain your results &mdash; click to ask me anything.</span>
+      </div>
+      <button id="candidateChatBubble" class="candidate-chat-bubble" type="button" aria-label="Chat with Sage about your results">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M12 13c-5 0-8 2.5-8 6v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-3.5-3-6-8-6z"></path>
+        </svg>
+      </button>
+      <div id="candidateChatWindow" class="candidate-chat-window hidden">
+        <div class="candidate-chat-header">
+          <span>Sage <span class="candidate-chat-header-subtitle">&middot; Explain My Results</span></span>
+          <button id="candidateChatCloseBtn" class="modal-close-btn" type="button" aria-label="Close chat">&times;</button>
+        </div>
+        <div class="batch-chat-suggestions">
+          <button type="button" class="chat-suggestion-chip" data-question="Why did I get this score?">Why did I get this score?</button>
+          <button type="button" class="chat-suggestion-chip" data-question="How can I improve my resume?">How can I improve my resume?</button>
+          <button type="button" class="chat-suggestion-chip" data-question="What skills am I missing?">What skills am I missing?</button>
+        </div>
+        <div id="candidateChatMessages" class="batch-chat-messages">
+          <p class="batch-chat-empty">Ask Sage a question about your own results below -- answers are based only on your evaluation.</p>
+        </div>
+        <div id="candidateChatLoading" class="loading-box" style="margin-bottom:12px;">
+          <div class="spinner"></div>
+          <span>Sage is thinking...</span>
+        </div>
+        <div class="batch-chat-input-row">
+          <input id="candidateChatInput" type="text" placeholder="Ask Sage about your results..." />
+          <button id="candidateChatSendBtn" class="btn-primary-sm" type="button">Send</button>
+        </div>
       </div>
     </div>
 
@@ -2028,29 +2154,10 @@
       const growthTextEl = document.getElementById('growthText');
       const formattingSection = document.getElementById('formattingSection');
       const formattingContent = document.getElementById('formattingContent');
-      const resumeViewSection = document.getElementById('resumeViewSection');
-      const resumeViewToggleBtn = document.getElementById('resumeViewToggleBtn');
-      const resumeViewContent = document.getElementById('resumeViewContent');
-      const resumeViewFrame = document.getElementById('resumeViewFrame');
-      const resumeViewText = document.getElementById('resumeViewText');
 
-      if (resumeViewToggleBtn) {
-        resumeViewToggleBtn.addEventListener('click', () => {
-          const expanding = resumeViewContent.classList.contains('hidden');
-          resumeViewContent.classList.toggle('hidden');
-          resumeViewToggleBtn.textContent = expanding ? 'Hide Resume' : 'View Resume';
-          resumeViewToggleBtn.setAttribute('aria-expanded', String(expanding));
-        });
-      }
-
-      // Send Email (single evaluation)
-      const sendEmailSection = document.getElementById('sendEmailSection');
-      const sendEmailBtn = document.getElementById('sendEmailBtn');
-      if (sendEmailBtn) {
-        sendEmailBtn.addEventListener('click', () => openEmailModal(currentCandidateContext));
-      }
-
-      // Send Email Modal (shared by single evaluation and batch screening)
+      // Send Email Modal (shared by batch screening; not used in the single-candidate
+      // view, since that view is candidate-facing -- resume viewing and outreach are
+      // recruiter-only actions, available in batch screening)
       const emailModalOverlay = document.getElementById('emailModalOverlay');
       const emailModalCandidateName = document.getElementById('emailModalCandidateName');
       const emailModalCloseBtn = document.getElementById('emailModalCloseBtn');
@@ -2226,6 +2333,138 @@
         });
       }
 
+      // Candidate-Facing "Explain My Results" Chat Widget
+      const candidateChatWidget = document.getElementById('candidateChatWidget');
+      const candidateChatBubble = document.getElementById('candidateChatBubble');
+      const candidateChatWindow = document.getElementById('candidateChatWindow');
+      const candidateChatCloseBtn = document.getElementById('candidateChatCloseBtn');
+      const candidateChatMessages = document.getElementById('candidateChatMessages');
+      const candidateChatLoading = document.getElementById('candidateChatLoading');
+      const candidateChatInput = document.getElementById('candidateChatInput');
+      const candidateChatSendBtn = document.getElementById('candidateChatSendBtn');
+      const candidateChatGreeting = document.getElementById('candidateChatGreeting');
+      const candidateChatGreetingClose = document.getElementById('candidateChatGreetingClose');
+      let candidateChatGreetingTimeoutId = null;
+
+      function showCandidateChatGreeting() {
+        if (!candidateChatGreeting) return;
+        clearTimeout(candidateChatGreetingTimeoutId);
+        candidateChatGreeting.classList.remove('hidden');
+        // Auto-dismiss after a while so it doesn't linger and clutter the page
+        // for someone who's already looked at it.
+        candidateChatGreetingTimeoutId = setTimeout(hideCandidateChatGreeting, 10000);
+      }
+
+      function hideCandidateChatGreeting() {
+        if (!candidateChatGreeting) return;
+        clearTimeout(candidateChatGreetingTimeoutId);
+        candidateChatGreeting.classList.add('hidden');
+      }
+
+      function showCandidateChatWidget() {
+        if (!candidateChatWidget) return;
+        candidateChatWidget.classList.remove('hidden');
+        // Slight delay so the greeting appears as a deliberate nudge right after
+        // the results render, not an instant jump-scare alongside them.
+        setTimeout(showCandidateChatGreeting, 700);
+      }
+
+      function hideCandidateChatWidget() {
+        if (!candidateChatWidget) return;
+        candidateChatWidget.classList.add('hidden');
+        candidateChatWindow.classList.add('hidden');
+        candidateChatBubble.classList.remove('hidden');
+        hideCandidateChatGreeting();
+      }
+
+      function resetCandidateChat() {
+        if (!candidateChatMessages) return;
+        candidateChatMessages.innerHTML = '<p class="batch-chat-empty">Ask Sage a question about your own results below -- answers are based only on your evaluation.</p>';
+        candidateChatInput.value = '';
+        candidateChatWindow.classList.add('hidden');
+        candidateChatBubble.classList.remove('hidden');
+        hideCandidateChatGreeting();
+      }
+
+      function appendCandidateChatMessage(role, text, isError) {
+        const emptyState = candidateChatMessages.querySelector('.batch-chat-empty');
+        if (emptyState) emptyState.remove();
+
+        const bubble = document.createElement('div');
+        bubble.className = `batch-chat-message ${role}` + (isError ? ' error' : '');
+        bubble.textContent = text;
+        candidateChatMessages.appendChild(bubble);
+        candidateChatMessages.scrollTop = candidateChatMessages.scrollHeight;
+      }
+
+      async function sendCandidateChatMessage(question) {
+        const trimmed = (question || '').trim();
+        if (!trimmed) return;
+        if (!currentCandidateContext || !currentCandidateContext.candidateId) {
+          appendCandidateChatMessage('assistant', 'Your evaluation is not loaded yet. Please analyze a candidate first.', true);
+          return;
+        }
+
+        appendCandidateChatMessage('user', trimmed);
+        candidateChatInput.value = '';
+        candidateChatSendBtn.disabled = true;
+        candidateChatInput.disabled = true;
+        candidateChatLoading.style.display = 'flex';
+
+        try {
+          const response = await fetch('/candidate-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              candidate_id: currentCandidateContext.candidateId,
+              question: trimmed
+            })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || 'Failed to get an answer.');
+          appendCandidateChatMessage('assistant', data.answer);
+        } catch (err) {
+          appendCandidateChatMessage('assistant', err.message || 'Failed to get an answer.', true);
+        } finally {
+          candidateChatSendBtn.disabled = false;
+          candidateChatInput.disabled = false;
+          candidateChatLoading.style.display = 'none';
+          candidateChatInput.focus();
+        }
+      }
+
+      if (candidateChatBubble) {
+        candidateChatBubble.addEventListener('click', () => {
+          hideCandidateChatGreeting();
+          candidateChatWindow.classList.remove('hidden');
+          candidateChatBubble.classList.add('hidden');
+          candidateChatInput.focus();
+        });
+      }
+      if (candidateChatGreetingClose) {
+        candidateChatGreetingClose.addEventListener('click', hideCandidateChatGreeting);
+      }
+      if (candidateChatCloseBtn) {
+        candidateChatCloseBtn.addEventListener('click', () => {
+          candidateChatWindow.classList.add('hidden');
+          candidateChatBubble.classList.remove('hidden');
+        });
+      }
+      if (candidateChatSendBtn) {
+        candidateChatSendBtn.addEventListener('click', () => sendCandidateChatMessage(candidateChatInput.value));
+      }
+      if (candidateChatInput) {
+        candidateChatInput.addEventListener('keydown', event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendCandidateChatMessage(candidateChatInput.value);
+          }
+        });
+      }
+      document.querySelectorAll('#candidateChatWindow .chat-suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', () => sendCandidateChatMessage(chip.dataset.question));
+      });
+
       function escapeHtml(str) {
         if (!str) return '';
         return str
@@ -2315,8 +2554,6 @@
           const routing = evaluationData.routing_decision || 'needs_review';
           const growth = evaluationData.growth_recommendation;
           const ats = evaluationData.resume_formatting_check;
-          const rawResumeText = evaluationData.raw_resume_text || '';
-          const hasResumeFile = Boolean(evaluationData.has_resume_file);
           const resumeCandidateId = evaluationData.candidate_id;
           const candidateEmail = evaluationData.candidate_email || null;
           const candidateName = match.candidate_name || 'Candidate';
@@ -2451,39 +2688,20 @@
             formattingSection.classList.add('hidden');
           }
 
-          // Render View Resume Card (collapsed by default on each new analysis).
-          // Prefer the real uploaded PDF (preserves layout); fall back to the
-          // extracted raw text only when no PDF was uploaded (e.g. pasted text).
-          if (resumeViewSection && (hasResumeFile || rawResumeText)) {
-            if (hasResumeFile && resumeCandidateId) {
-              resumeViewFrame.src = `/resume-file/${encodeURIComponent(resumeCandidateId)}`;
-              resumeViewFrame.classList.remove('hidden');
-              resumeViewText.classList.add('hidden');
-              resumeViewText.textContent = '';
-            } else {
-              resumeViewText.textContent = rawResumeText;
-              resumeViewText.classList.remove('hidden');
-              resumeViewFrame.classList.add('hidden');
-              resumeViewFrame.src = '';
-            }
-            resumeViewSection.classList.remove('hidden');
-            resumeViewContent.classList.add('hidden');
-            resumeViewToggleBtn.textContent = 'View Resume';
-            resumeViewToggleBtn.setAttribute('aria-expanded', 'false');
-          } else if (resumeViewSection) {
-            resumeViewSection.classList.add('hidden');
-          }
+          // View Resume / Send Email are recruiter-only actions (available in Batch
+          // Screening) and are intentionally not shown on this candidate-facing view.
+          // currentCandidateContext is still tracked here since Sage (the chat widget
+          // below) needs the candidate id to answer questions about this evaluation.
+          currentCandidateContext = {
+            candidateId: resumeCandidateId,
+            candidateName: candidateName,
+            candidateEmail: candidateEmail,
+            jobTitle: currentJobTitle
+          };
 
-          // Render Send Email Card
-          if (sendEmailSection) {
-            currentCandidateContext = {
-              candidateId: resumeCandidateId,
-              candidateName: candidateName,
-              candidateEmail: candidateEmail,
-              jobTitle: currentJobTitle
-            };
-            sendEmailSection.classList.remove('hidden');
-          }
+          // Show the "Explain My Results" floating chat widget for this candidate
+          resetCandidateChat();
+          showCandidateChatWidget();
 
           resultCard.style.display = 'block';
         } catch (error) {
@@ -2501,6 +2719,12 @@
       function switchTab(tabName) {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+
+        // The "Explain My Results" chat widget is single-evaluation-view only.
+        if (candidateChatWidget) {
+          const hasResult = resultCard.style.display === 'block';
+          candidateChatWidget.classList.toggle('hidden', !(tabName === 'screener' && hasResult));
+        }
 
         if (tabName === 'screener') {
           document.getElementById('navScreener').classList.add('active');
@@ -2874,7 +3098,7 @@
       function resetBatchChat(batchId) {
         currentBatchId = batchId;
         if (!batchChatSection) return;
-        batchChatMessages.innerHTML = '<p class="batch-chat-empty">Ask a question about this batch of candidates -- answers are based only on the screening results above.</p>';
+        batchChatMessages.innerHTML = '<p class="batch-chat-empty">Ask Sage a question about this batch of candidates -- answers are based only on the screening results above.</p>';
         batchChatInput.value = '';
         batchChatSection.classList.remove('hidden');
       }
@@ -2946,7 +3170,7 @@
           }
         });
       }
-      document.querySelectorAll('.chat-suggestion-chip').forEach(chip => {
+      document.querySelectorAll('#batchChatSection .chat-suggestion-chip').forEach(chip => {
         chip.addEventListener('click', () => sendBatchChatMessage(chip.dataset.question));
       });
 

@@ -94,6 +94,40 @@ def test_answer_batch_question_returns_model_answer(monkeypatch):
     assert captured["messages"][1] == {"role": "user", "content": "Who scored above 70?"}
 
 
+def test_answer_batch_question_system_prompt_permits_threshold_reasoning(monkeypatch):
+    """Regression test: the model must be told that filtering/comparing/counting
+    over the given scores (e.g. "who scored above 70?") is legitimate analysis,
+    not fabrication -- and that "zero candidates qualify" is a valid, sayable
+    answer rather than a reason to respond "I don't have that information."."""
+    captured = {}
+
+    class DummyOpenAI:
+        def __init__(self, api_key):
+            pass
+
+        @property
+        def chat(self):
+            return self
+
+        @property
+        def completions(self):
+            return self
+
+        def create(self, model, temperature, messages, **kwargs):
+            captured["messages"] = messages
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="Some answer."))])
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr("app.batch_chat.OpenAI", DummyOpenAI)
+
+    answer_batch_question(_sample_results(), "Backend Engineer", "Who scored above 70?")
+
+    system_message = captured["messages"][0]["content"].lower()
+    assert "filter, compare, count" in system_message
+    assert "zero candidates qualify" in system_message
+    assert "not fabrication" in system_message
+
+
 def test_answer_batch_question_raises_when_results_empty():
     with pytest.raises(ValueError, match="No batch results"):
         answer_batch_question([], "Backend Engineer", "Who scored above 70?")

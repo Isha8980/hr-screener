@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from app.ats_check import analyze_ats_readability
 from app.batch_chat import answer_batch_question
+from app.candidate_chat import answer_candidate_question
 from app.emailer import build_interview_invite_email, build_rejection_email, log_sent_email, send_email
 from app.explain import generate_explanation
 from app.fairness import run_fairness_check
@@ -62,6 +63,13 @@ RESUME_FILE_STORE: dict[str, bytes] = {}
 # full results payload on every message. In-memory only, cleared on restart.
 BATCH_STORE: dict[str, dict[str, Any]] = {}
 
+# Every candidate's own evaluation result, keyed by candidate_id, so the
+# candidate-facing "Explain My Results" chat can answer follow-up questions
+# about a specific evaluation later. Populated for every evaluation regardless
+# of routing decision (unlike QUEUE_STORE, which only holds candidates needing
+# human review). In-memory only, cleared on restart.
+EVALUATION_STORE: dict[str, dict[str, Any]] = {}
+
 
 class JobTextRequest(BaseModel):
     text: str
@@ -103,6 +111,11 @@ _EMAIL_TEMPLATE_BUILDERS = {
 
 class BatchChatRequest(BaseModel):
     batch_id: str
+    question: str
+
+
+class CandidateChatRequest(BaseModel):
+    candidate_id: str
     question: str
 
 
@@ -187,6 +200,8 @@ def _run_evaluation(
         "has_resume_file": candidate_id in RESUME_FILE_STORE,
         "candidate_email": candidate.email,
     }
+
+    EVALUATION_STORE[candidate_id] = result
 
     if routing_decision in {"needs_review", "flagged_for_bias", "auto_rejected"}:
         QUEUE_STORE[candidate_id] = {
@@ -434,6 +449,28 @@ def batch_chat(
 
     try:
         answer = answer_batch_question(batch_record["results"], batch_record["job_title"], payload.question)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"answer": answer}
+
+
+@app.post("/candidate-chat")
+def candidate_chat(payload: CandidateChatRequest) -> dict[str, Any]:
+    """Answer a candidate's question about their own evaluation. Deliberately not
+    recruiter-gated -- this is candidate-facing, for the person viewing their own
+    result to ask about it, same as the rest of the single-evaluation flow."""
+    candidate_record = CANDIDATE_STORE.get(payload.candidate_id)
+    evaluation_record = EVALUATION_STORE.get(payload.candidate_id)
+    if not candidate_record or not evaluation_record:
+        raise HTTPException(status_code=404, detail=f"No evaluation found for candidate '{payload.candidate_id}'.")
+
+    candidate: CandidateProfile = candidate_record["candidate"]
+
+    try:
+        answer = answer_candidate_question(evaluation_record, candidate.name, payload.question)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
