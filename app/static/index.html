@@ -1307,6 +1307,12 @@
         background-color: var(--primary-soft);
       }
 
+      .btn-outline-sm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: transparent;
+      }
+
       .resume-view-content {
         margin-top: 14px;
       }
@@ -1423,6 +1429,149 @@
         background-color: var(--danger-bg);
         border: 1px solid var(--danger-border);
         color: var(--danger);
+      }
+
+      /* Sage Welcome Tour */
+      .sage-tour-panel {
+        max-width: 440px;
+      }
+
+      .sage-tour-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sage-avatar-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .sage-tour-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 4px 0 20px;
+        padding: 0;
+      }
+
+      .sage-tour-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: var(--text-main);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .sage-tour-list li::before {
+        content: '✓';
+        color: var(--primary);
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .sage-tour-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .sage-tour-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .sage-tour-checkbox-label input {
+        cursor: pointer;
+      }
+
+      .sage-tips-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        margin-top: 10px;
+      }
+
+      .sage-tips-link:hover {
+        color: var(--primary);
+      }
+
+      /* Sage Guided Walkthrough (spotlight) */
+      .sage-spotlight-hole {
+        position: fixed;
+        z-index: 1100;
+        border-radius: 10px;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65), 0 0 0 3px var(--primary), 0 0 20px 4px var(--primary);
+        pointer-events: none;
+        transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+      }
+
+      .sage-spotlight-callout {
+        position: fixed;
+        z-index: 1101;
+        width: 280px;
+        max-width: calc(100vw - 32px);
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 16px;
+      }
+
+      .sage-spotlight-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--text-main);
+        margin-bottom: 8px;
+      }
+
+      .sage-spotlight-header .sage-avatar-icon {
+        width: 22px;
+        height: 22px;
+      }
+
+      .sage-spotlight-text {
+        color: var(--text-main);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin-bottom: 14px;
+      }
+
+      .sage-spotlight-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .sage-spotlight-nav {
+        display: flex;
+        gap: 8px;
       }
 
       @media (max-width: 768px) {
@@ -1712,6 +1861,10 @@
             <div class="workspace-intro">
               <h1 class="workspace-title">Candidate Screener &amp; Matcher</h1>
               <p class="workspace-subtitle">Evaluate job requirements against candidate resumes using automated AI matching.</p>
+              <button type="button" class="sage-tips-link" onclick="showSageTour('candidate')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M12 13c-5 0-8 2.5-8 6v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-3.5-3-6-8-6z"></path></svg>
+                Show tips from Sage
+              </button>
             </div>
 
           <!-- Inputs Grid: Step 1 & Step 2 -->
@@ -1896,6 +2049,10 @@
               <div class="workspace-intro">
                 <h1 class="workspace-title">Batch Screening</h1>
                 <p class="workspace-subtitle">Rank multiple candidates against one job and review tailored interview questions.</p>
+                <button type="button" class="sage-tips-link" onclick="showSageTour('recruiter')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M12 13c-5 0-8 2.5-8 6v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-3.5-3-6-8-6z"></path></svg>
+                  Show tips from Sage
+                </button>
               </div>
 
               <div class="card batch-form-card">
@@ -2024,6 +2181,54 @@
         <div class="batch-chat-input-row">
           <input id="candidateChatInput" type="text" placeholder="Ask Sage about your results..." />
           <button id="candidateChatSendBtn" class="btn-primary-sm" type="button">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sage Welcome Tour (candidate + recruiter, shared markup/content swapped by JS) -->
+    <div id="sageTourOverlay" class="modal-overlay hidden">
+      <div class="modal-panel card sage-tour-panel">
+        <div class="section-card-title">
+          <span class="sage-tour-title">
+            <span class="sage-avatar-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M12 13c-5 0-8 2.5-8 6v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-3.5-3-6-8-6z"></path>
+              </svg>
+            </span>
+            <span id="sageTourHeading">Hi, I'm Sage!</span>
+          </span>
+          <button id="sageTourCloseBtn" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
+        </div>
+        <ul id="sageTourList" class="sage-tour-list"></ul>
+        <div class="sage-tour-footer">
+          <label class="sage-tour-checkbox-label">
+            <input id="sageTourDontShowAgain" type="checkbox" />
+            <span>Don't show this again</span>
+          </label>
+          <button id="sageTourGotItBtn" class="btn-primary-sm" type="button">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sage Guided Walkthrough (spotlight overlay + callout) -->
+    <div id="sageSpotlightHole" class="sage-spotlight-hole hidden"></div>
+    <div id="sageSpotlightCallout" class="sage-spotlight-callout hidden">
+      <div class="sage-spotlight-header">
+        <span class="sage-avatar-icon">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M12 13c-5 0-8 2.5-8 6v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-3.5-3-6-8-6z"></path>
+          </svg>
+        </span>
+        <span>Sage</span>
+      </div>
+      <p id="sageSpotlightText" class="sage-spotlight-text"></p>
+      <div class="sage-spotlight-actions">
+        <button id="sageSpotlightSkipBtn" class="sage-tips-link" type="button" style="margin-top:0;">Skip tour</button>
+        <div class="sage-spotlight-nav">
+          <button id="sageSpotlightBackBtn" class="btn-outline-sm" type="button">Back</button>
+          <button id="sageSpotlightNextBtn" class="btn-primary-sm" type="button">Next</button>
         </div>
       </div>
     </div>
@@ -2465,6 +2670,268 @@
         chip.addEventListener('click', () => sendCandidateChatMessage(chip.dataset.question));
       });
 
+      // Sage Welcome Tour -- first-visit intro shown automatically for each
+      // section, with a persistent "don't show again" opt-out per browser.
+      const SAGE_CANDIDATE_TOUR_KEY = 'sage_seen_candidate_intro';
+      const SAGE_RECRUITER_TOUR_KEY = 'sage_seen_recruiter_intro';
+      const SAGE_TOUR_CONTENT = {
+        candidate: {
+          heading: "Hi, I'm Sage!",
+          items: [
+            'Upload a resume and a job posting to get an instant match score.',
+            'See exactly which skills matched and which are missing, with a plain-English explanation.',
+            'Get a personalized growth recommendation to help close your skill gaps.',
+            "Check your resume's ATS formatting score to catch parsing issues before you apply.",
+            'Click my bubble in the corner anytime to ask me about your results.'
+          ]
+        },
+        recruiter: {
+          heading: "Hi, I'm Sage!",
+          items: [
+            'Batch-screen multiple resumes at once and get a ranked shortlist.',
+            'Review candidates routed to Needs Review or Flagged for Bias in the queue.',
+            'Override an AI routing decision -- your reason is logged for the record.',
+            "Send interview invites or rejection emails directly from a candidate's card.",
+            "View a candidate's original resume inline, right where you're reviewing them.",
+            'Ask me natural-language questions about a batch of results in the chat panel below the table.'
+          ]
+        }
+      };
+
+      // Guided walkthrough step sequences -- each targets a real element already
+      // in the page via a CSS selector. Steps whose target is missing or not
+      // currently visible (e.g. a batch-only element while on the single-eval
+      // tab) are skipped automatically, never causing an error.
+      const SAGE_CANDIDATE_STEPS = [
+        { selector: '#themeToggle', text: 'Switch between light and dark mode anytime.' },
+        { selector: '#jobText', text: 'Paste the job posting here.' },
+        { selector: '#uploadZone', text: 'Upload your resume here (PDF or text).' },
+        { selector: '#analyzeBtn', text: 'Click here to get your match score.' },
+        { selector: '#candidateChatBubble', text: 'Ask me anything about your results anytime.' }
+      ];
+      const SAGE_RECRUITER_STEPS = [
+        { selector: '#batchUploadZone', text: 'Upload multiple resumes here to screen them all at once.' },
+        { selector: '#batchJobDescription', text: 'Paste the job posting here.' },
+        { selector: '#navQueue', text: 'Review candidates routed to Needs Review or Flagged for Bias here.' },
+        { selector: '.batch-send-email-btn', text: "Send interview invites or rejections right from a candidate's card." },
+        { selector: '#batchChatSection', text: 'Ask me natural-language questions about a batch of results here.' }
+      ];
+
+      let sageTourShownThisSession = { candidate: false, recruiter: false };
+      let activeSageTourKey = null;
+      let activeSageTourKind = null;
+      let sageWalkthroughSteps = [];
+      let sageWalkthroughIndex = -1;
+      let sageWalkthroughStorageKey = null;
+
+      const sageTourOverlay = document.getElementById('sageTourOverlay');
+      const sageTourHeading = document.getElementById('sageTourHeading');
+      const sageTourList = document.getElementById('sageTourList');
+      const sageTourCloseBtn = document.getElementById('sageTourCloseBtn');
+      const sageTourGotItBtn = document.getElementById('sageTourGotItBtn');
+      const sageTourDontShowAgain = document.getElementById('sageTourDontShowAgain');
+      const sageSpotlightHole = document.getElementById('sageSpotlightHole');
+      const sageSpotlightCallout = document.getElementById('sageSpotlightCallout');
+      const sageSpotlightText = document.getElementById('sageSpotlightText');
+      const sageSpotlightBackBtn = document.getElementById('sageSpotlightBackBtn');
+      const sageSpotlightNextBtn = document.getElementById('sageSpotlightNextBtn');
+      const sageSpotlightSkipBtn = document.getElementById('sageSpotlightSkipBtn');
+
+      function showSageTour(kind) {
+        const content = SAGE_TOUR_CONTENT[kind];
+        if (!content || !sageTourOverlay) return;
+
+        activeSageTourKind = kind;
+        activeSageTourKey = kind === 'candidate' ? SAGE_CANDIDATE_TOUR_KEY : SAGE_RECRUITER_TOUR_KEY;
+        sageTourHeading.textContent = content.heading;
+        sageTourList.innerHTML = content.items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        sageTourDontShowAgain.checked = false;
+        sageTourOverlay.classList.remove('hidden');
+      }
+
+      function closeSageTour() {
+        if (sageTourDontShowAgain && sageTourDontShowAgain.checked && activeSageTourKey) {
+          try {
+            localStorage.setItem(activeSageTourKey, 'true');
+          } catch (err) {
+            // localStorage may be unavailable (e.g. private browsing); closing
+            // still works, it just won't be remembered next visit.
+          }
+        }
+        if (sageTourOverlay) sageTourOverlay.classList.add('hidden');
+        activeSageTourKey = null;
+        activeSageTourKind = null;
+      }
+
+      // Closing via "Next" respects the checkbox exactly like a normal close,
+      // then proceeds into the spotlight walkthrough for the same tour.
+      function proceedFromSageTourModal() {
+        const kind = activeSageTourKind;
+        closeSageTour();
+        if (kind) startSageWalkthrough(kind);
+      }
+
+      function maybeShowSageTourOnce(kind, storageKey) {
+        if (sageTourShownThisSession[kind]) return;
+        sageTourShownThisSession[kind] = true;
+        let alreadyDismissedForGood = false;
+        try {
+          alreadyDismissedForGood = localStorage.getItem(storageKey) === 'true';
+        } catch (err) {
+          alreadyDismissedForGood = false;
+        }
+        if (alreadyDismissedForGood) return;
+        showSageTour(kind);
+      }
+
+      function maybeShowCandidateTour() {
+        maybeShowSageTourOnce('candidate', SAGE_CANDIDATE_TOUR_KEY);
+      }
+
+      function maybeShowRecruiterTour() {
+        maybeShowSageTourOnce('recruiter', SAGE_RECRUITER_TOUR_KEY);
+      }
+
+      // --- Guided walkthrough (spotlight) engine ---
+
+      function sageTourStepIsVisible(step) {
+        const el = document.querySelector(step.selector);
+        if (!el) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }
+
+      function findNextValidSageStepIndex(steps, fromIndex, direction) {
+        let i = fromIndex + direction;
+        while (i >= 0 && i < steps.length) {
+          if (sageTourStepIsVisible(steps[i])) return i;
+          i += direction;
+        }
+        return -1;
+      }
+
+      function positionSageSpotlight(el) {
+        if (typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ block: 'center', inline: 'center' });
+        }
+        const rect = el.getBoundingClientRect();
+        const pad = 6;
+        const holeTop = rect.top - pad;
+        const holeLeft = rect.left - pad;
+        const holeWidth = rect.width + pad * 2;
+        const holeHeight = rect.height + pad * 2;
+        sageSpotlightHole.style.top = `${holeTop}px`;
+        sageSpotlightHole.style.left = `${holeLeft}px`;
+        sageSpotlightHole.style.width = `${holeWidth}px`;
+        sageSpotlightHole.style.height = `${holeHeight}px`;
+
+        const calloutWidth = sageSpotlightCallout.offsetWidth || 280;
+        const viewportW = window.innerWidth;
+        const viewportH = window.innerHeight;
+        let top = holeTop + holeHeight + 12;
+        if (top + 160 > viewportH) {
+          top = Math.max(12, holeTop - 12 - 160);
+        }
+        let left = Math.min(Math.max(12, holeLeft), viewportW - calloutWidth - 12);
+        sageSpotlightCallout.style.top = `${top}px`;
+        sageSpotlightCallout.style.left = `${left}px`;
+      }
+
+      function renderSageWalkthroughStep() {
+        const step = sageWalkthroughSteps[sageWalkthroughIndex];
+        const el = step ? document.querySelector(step.selector) : null;
+        if (!step || !el || !sageTourStepIsVisible(step)) {
+          // Defensive: indices are pre-validated, but never get stuck on a step
+          // whose target vanished (e.g. window resized down) between renders.
+          sageWalkthroughAdvance(1);
+          return;
+        }
+
+        positionSageSpotlight(el);
+        sageSpotlightText.textContent = step.text;
+
+        const hasPrev = findNextValidSageStepIndex(sageWalkthroughSteps, sageWalkthroughIndex, -1) !== -1;
+        const hasNext = findNextValidSageStepIndex(sageWalkthroughSteps, sageWalkthroughIndex, 1) !== -1;
+        sageSpotlightBackBtn.disabled = !hasPrev;
+        sageSpotlightNextBtn.textContent = hasNext ? 'Next' : 'Finish';
+
+        sageSpotlightHole.classList.remove('hidden');
+        sageSpotlightCallout.classList.remove('hidden');
+      }
+
+      function endSageSpotlightUI() {
+        if (sageSpotlightHole) sageSpotlightHole.classList.add('hidden');
+        if (sageSpotlightCallout) sageSpotlightCallout.classList.add('hidden');
+        sageWalkthroughSteps = [];
+        sageWalkthroughIndex = -1;
+      }
+
+      // Skipping and naturally finishing the last step both mark the tour as
+      // permanently seen -- there is no per-step "don't show again" checkbox,
+      // having gone through (or explicitly skipped) the walkthrough is itself
+      // the signal that it doesn't need to auto-show again.
+      function finishSageWalkthrough() {
+        if (sageWalkthroughStorageKey) {
+          try {
+            localStorage.setItem(sageWalkthroughStorageKey, 'true');
+          } catch (err) {
+            // localStorage may be unavailable; the tour still ends either way.
+          }
+        }
+        sageWalkthroughStorageKey = null;
+        endSageSpotlightUI();
+      }
+
+      function skipSageWalkthrough() {
+        finishSageWalkthrough();
+      }
+
+      function startSageWalkthrough(kind) {
+        sageWalkthroughSteps = kind === 'candidate' ? SAGE_CANDIDATE_STEPS : SAGE_RECRUITER_STEPS;
+        sageWalkthroughStorageKey = kind === 'candidate' ? SAGE_CANDIDATE_TOUR_KEY : SAGE_RECRUITER_TOUR_KEY;
+
+        const firstIndex = findNextValidSageStepIndex(sageWalkthroughSteps, -1, 1);
+        if (firstIndex === -1) {
+          // Nothing on the current page is available to spotlight right now
+          // (e.g. every target is off-screen/hidden) -- end gracefully instead
+          // of showing a broken overlay with nothing highlighted.
+          finishSageWalkthrough();
+          return;
+        }
+        sageWalkthroughIndex = firstIndex;
+        renderSageWalkthroughStep();
+      }
+
+      function sageWalkthroughAdvance(direction) {
+        const nextIndex = findNextValidSageStepIndex(sageWalkthroughSteps, sageWalkthroughIndex, direction);
+        if (nextIndex === -1) {
+          if (direction > 0) {
+            finishSageWalkthrough();
+          }
+          // Going backward past the first step is a no-op; stay put.
+          return;
+        }
+        sageWalkthroughIndex = nextIndex;
+        renderSageWalkthroughStep();
+      }
+
+      if (sageTourCloseBtn) sageTourCloseBtn.addEventListener('click', closeSageTour);
+      if (sageTourGotItBtn) sageTourGotItBtn.addEventListener('click', proceedFromSageTourModal);
+      if (sageTourOverlay) {
+        sageTourOverlay.addEventListener('click', event => {
+          if (event.target === sageTourOverlay) closeSageTour();
+        });
+      }
+      if (sageSpotlightNextBtn) sageSpotlightNextBtn.addEventListener('click', () => sageWalkthroughAdvance(1));
+      if (sageSpotlightBackBtn) sageSpotlightBackBtn.addEventListener('click', () => sageWalkthroughAdvance(-1));
+      if (sageSpotlightSkipBtn) sageSpotlightSkipBtn.addEventListener('click', skipSageWalkthrough);
+      window.addEventListener('resize', () => {
+        if (sageWalkthroughIndex >= 0 && sageWalkthroughSteps[sageWalkthroughIndex]) {
+          const el = document.querySelector(sageWalkthroughSteps[sageWalkthroughIndex].selector);
+          if (el) positionSageSpotlight(el);
+        }
+      });
+
       function escapeHtml(str) {
         if (!str) return '';
         return str
@@ -2720,6 +3187,11 @@
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
 
+        // Navigating away mid-walkthrough would leave the spotlight pointing at
+        // now-hidden elements; end it gracefully rather than leaving it stuck.
+        // (Not treated as a skip/finish -- the dismissal flag is left untouched.)
+        if (sageWalkthroughSteps.length) endSageSpotlightUI();
+
         // The "Explain My Results" chat widget is single-evaluation-view only.
         if (candidateChatWidget) {
           const hasResult = resultCard.style.display === 'block';
@@ -2729,6 +3201,7 @@
         if (tabName === 'screener') {
           document.getElementById('navScreener').classList.add('active');
           document.getElementById('screenerView').classList.remove('hidden');
+          maybeShowCandidateTour();
         } else if (tabName === 'batch') {
           document.getElementById('navBatch').classList.add('active');
           document.getElementById('batchView').classList.remove('hidden');
@@ -2785,6 +3258,7 @@
             recruiterStatusIcon.textContent = '✅';
             recruiterStatusText.textContent = 'Recruiter Logged In';
             queuePasswordInput.value = '';
+            maybeShowRecruiterTour();
 
             loadQueue();
           } catch (err) {
@@ -2812,6 +3286,7 @@
             recruiterStatusIcon.textContent = '✅';
             recruiterStatusText.textContent = 'Recruiter Logged In';
             batchPasswordInput.value = '';
+            maybeShowRecruiterTour();
             showBatchContent();
           } catch (err) {
             batchLoginError.textContent = err.message || 'Invalid password.';
@@ -3301,6 +3776,10 @@
           container.innerHTML = `<div class="error-msg-text">Failed to load queue: ${escapeHtml(err.message)}</div>`;
         }
       }
+
+      // The screener tab is active by default (not reached via switchTab), so the
+      // candidate tour needs its own initial trigger for that first page load.
+      setTimeout(maybeShowCandidateTour, 600);
     </script>
   </body>
 </html>
