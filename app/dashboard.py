@@ -43,6 +43,13 @@ VALID_TOKENS: set[str] = set()
 AVG_MANUAL_REVIEW_MINUTES = 8
 AVG_RECRUITER_HOURLY_COST_INR = 400
 
+# Maximum resumes accepted per /batch-evaluate request. Each candidate triggers
+# several real OpenAI API calls (parsing, explanation, growth, interview
+# questions), and this app runs on limited free-tier hosting resources -- a
+# reasonable, adjustable cap to keep any single request from running too long
+# or too expensively.
+MAX_BATCH_SIZE = 15
+
 app = FastAPI(title="HR Screener Dashboard")
 
 # In-memory storage for now; a real database would replace this later.
@@ -317,6 +324,14 @@ async def batch_evaluate(
         raise HTTPException(status_code=404, detail=f"Job with id '{job_id}' not found.")
     if not files:
         raise HTTPException(status_code=400, detail="At least one resume file is required.")
+    if len(files) > MAX_BATCH_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Batch size limit exceeded: you submitted {len(files)} resumes, but the maximum "
+                f"is {MAX_BATCH_SIZE} per batch. Please split this into smaller batches."
+            ),
+        )
 
     job: JobRequirements = job_record["job"]
     batch_results: list[dict[str, Any]] = []

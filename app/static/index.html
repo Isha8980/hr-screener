@@ -1212,11 +1212,23 @@
         font-size: 0.85rem;
       }
 
+      .batch-limit-note {
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+      }
+
       .batch-table-wrap {
         overflow-x: auto;
         border: 1px solid var(--border-color);
         border-radius: var(--radius-md);
         background: var(--bg-card);
+      }
+
+      .batch-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
       }
 
       .batch-table {
@@ -1300,6 +1312,9 @@
         border-radius: var(--radius-sm);
         border: 1px solid var(--primary);
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         transition: background-color 0.15s ease;
       }
 
@@ -1761,6 +1776,87 @@
       .hidden {
         display: none !important;
       }
+
+      /* Downloadable report (printed via the browser's print dialog --
+         "Save as PDF" produces the actual downloadable file, no server-side
+         PDF generation or extra dependencies needed). */
+      .sage-print-report {
+        display: none;
+      }
+
+      @media print {
+        /* Remove every other top-level element from layout entirely (not just
+           visually hide it) so the page collapses to the report's own height
+           -- a visibility:hidden approach leaves the rest of the (dark-themed)
+           app still occupying its normal height, which prints as extra blank/
+           dark pages behind the report. */
+        body > *:not(#sagePrintReport) {
+          display: none !important;
+        }
+
+        html,
+        body {
+          background: #fff !important;
+          height: auto !important;
+          margin: 0;
+        }
+
+        .sage-print-report {
+          display: block;
+          width: 100%;
+          padding: 24px;
+          color: #000;
+          background: #fff;
+        }
+
+        .print-report-header {
+          margin-bottom: 24px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 12px;
+        }
+
+        .print-report-header h1 {
+          font-size: 1.4rem;
+          margin: 0 0 4px;
+        }
+
+        .print-report-meta {
+          font-size: 0.8rem;
+          color: #444;
+        }
+
+        .print-report-candidate {
+          margin-bottom: 28px;
+          page-break-inside: avoid;
+        }
+
+        .print-report-candidate + .print-report-candidate {
+          border-top: 1px solid #999;
+          padding-top: 20px;
+        }
+
+        .print-report-candidate h2 {
+          font-size: 1.15rem;
+          margin: 0 0 6px;
+        }
+
+        .print-report-candidate h3 {
+          font-size: 0.95rem;
+          margin: 14px 0 6px;
+        }
+
+        .print-report-candidate p,
+        .print-report-candidate li {
+          font-size: 0.85rem;
+          line-height: 1.5;
+        }
+
+        .print-report-candidate ul,
+        .print-report-candidate ol {
+          margin: 0 0 8px;
+          padding-left: 20px;
+        }
+      }
     </style>
   </head>
 
@@ -1951,6 +2047,14 @@
                     </div>
                   </div>
                 </div>
+                <button id="downloadReportBtn" class="btn-outline-sm" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  Download Report
+                </button>
               </div>
 
               <!-- Skills Grid -->
@@ -2073,6 +2177,7 @@
                       <span>Choose or drop multiple .pdf/.txt resumes</span>
                     </div>
                   </div>
+                  <p id="batchLimitNote" class="batch-limit-note">Maximum 15 resumes per batch.</p>
                   <div id="batchFileSummary" class="batch-file-summary">No resumes selected.</div>
                 </div>
                 <button id="batchScreenBtn" class="btn-primary" type="button">Screen All Candidates</button>
@@ -2148,6 +2253,9 @@
         </main>
       </div>
     </div>
+
+    <!-- Downloadable Report (hidden on screen, shown only when printing) -->
+    <div id="sagePrintReport" class="sage-print-report"></div>
 
     <!-- Candidate-Facing "Sage" Chat Widget (single-evaluation view only) -->
     <div id="candidateChatWidget" class="candidate-chat-widget hidden">
@@ -2344,6 +2452,7 @@
       let currentBatchJobTitle = '';
       let currentCandidateContext = null;
       let currentBatchId = null;
+      let lastSingleReport = null;
       const analyzeBtn = document.getElementById('analyzeBtn');
       const loading = document.getElementById('loading');
       const resultCard = document.getElementById('resultCard');
@@ -2932,6 +3041,110 @@
         }
       });
 
+      // Downloadable Reports (PDF via the browser's print dialog). Works from
+      // the same "detail" shape returned by both /evaluate (top-level fields)
+      // and /batch-evaluate (each result's nested "detail" object) -- no
+      // server-side PDF generation or extra dependencies needed.
+      const sagePrintReport = document.getElementById('sagePrintReport');
+
+      function buildCandidateReportHtml(detail, candidateNameFallback) {
+        detail = detail || {};
+        const match = detail.match_result || {};
+        const candidateName = match.candidate_name || candidateNameFallback || 'Candidate';
+        const score = Math.round(match.match_score || 0);
+        const routing = (detail.routing_decision || 'N/A').replace(/_/g, ' ').toUpperCase();
+        const matchedSkills = match.matched_skills || [];
+        const missingSkills = match.missing_skills || [];
+        const explanation = detail.explanation?.rationale_text || 'No explanation available.';
+        const growth = detail.growth_recommendation;
+        const ats = detail.resume_formatting_check;
+        const questions = detail.interview_questions;
+
+        const matchedHtml = matchedSkills.length
+          ? matchedSkills.map(s => `<li>${escapeHtml(s)}</li>`).join('')
+          : '<li>None identified</li>';
+        const missingHtml = missingSkills.length
+          ? missingSkills.map(s => `<li>${escapeHtml(s)}</li>`).join('')
+          : '<li>None missing</li>';
+
+        const growthHtml = growth ? `
+          <h3>Growth Recommendation</h3>
+          <p><strong>Suggested Project:</strong> ${escapeHtml(growth.suggested_project || 'N/A')}</p>
+          <p><strong>Resume Tip:</strong> ${escapeHtml(growth.resume_tip || 'N/A')}</p>
+        ` : '';
+
+        let atsHtml = '';
+        if (ats) {
+          const atsScore = Math.round(Number(ats.readability_score) || 0);
+          const atsItems = [
+            ...(ats.issues || []).map(i => `<li>Issue: ${escapeHtml(i)}</li>`),
+            ...(ats.suggestions || []).map(s => `<li>Suggestion: ${escapeHtml(s)}</li>`)
+          ].join('') || '<li>No formatting issues detected.</li>';
+          atsHtml = `
+            <h3>Resume Formatting &amp; ATS Check</h3>
+            <p>ATS Compatibility Score: ${atsScore}/100</p>
+            <ul>${atsItems}</ul>
+          `;
+        }
+
+        const questionsHtml = (questions && questions.length) ? `
+          <h3>Suggested Interview Questions</h3>
+          <ol>${questions.map(q => `<li>${escapeHtml(q)}</li>`).join('')}</ol>
+        ` : '';
+
+        return `
+          <section class="print-report-candidate">
+            <h2>${escapeHtml(candidateName)}</h2>
+            <p class="print-report-meta"><strong>Match Score:</strong> ${score}/100 &nbsp;|&nbsp; <strong>Routing:</strong> ${escapeHtml(routing)}</p>
+            <h3>Matched Skills</h3>
+            <ul>${matchedHtml}</ul>
+            <h3>Missing Skills</h3>
+            <ul>${missingHtml}</ul>
+            <h3>AI Evaluation Rationale</h3>
+            <p>${escapeHtml(explanation)}</p>
+            ${growthHtml}
+            ${atsHtml}
+            ${questionsHtml}
+          </section>
+        `;
+      }
+
+      function triggerReportDownload(title, candidatesHtml) {
+        if (!sagePrintReport) return;
+        const generatedAt = new Date().toLocaleString();
+        sagePrintReport.innerHTML = `
+          <div class="print-report-header">
+            <h1>${escapeHtml(title)}</h1>
+            <p class="print-report-meta">Generated ${escapeHtml(generatedAt)} by HR Screener</p>
+          </div>
+          ${candidatesHtml}
+        `;
+        window.print();
+      }
+
+      function downloadSingleReport() {
+        if (!lastSingleReport) {
+          alert('Analyze a candidate first to generate a report.');
+          return;
+        }
+        const name = currentCandidateContext?.candidateName || lastSingleReport.match_result?.candidate_name;
+        triggerReportDownload('Candidate Match Report', buildCandidateReportHtml(lastSingleReport, name));
+      }
+
+      function downloadBatchReport(items) {
+        if (!items || !items.length) return;
+        const title = items.length === 1 ? 'Candidate Match Report' : 'Batch Screening Report';
+        const candidatesHtml = items
+          .map(item => buildCandidateReportHtml(item.detail, item.candidate_name))
+          .join('');
+        triggerReportDownload(title, candidatesHtml);
+      }
+
+      const downloadReportBtn = document.getElementById('downloadReportBtn');
+      if (downloadReportBtn) {
+        downloadReportBtn.addEventListener('click', downloadSingleReport);
+      }
+
       function escapeHtml(str) {
         if (!str) return '';
         return str
@@ -3165,6 +3378,7 @@
             candidateEmail: candidateEmail,
             jobTitle: currentJobTitle
           };
+          lastSingleReport = evaluationData;
 
           // Show the "Explain My Results" floating chat widget for this candidate
           resetCandidateChat();
@@ -3407,6 +3621,18 @@
               data-candidate-name="${escapeHtml(item.candidate_name || '')}"
               data-candidate-email="${escapeHtml(detail.candidate_email || '')}">Send Email</button>
           </div>`;
+        const downloadReportHtml = `
+          <div class="card">
+            <div class="section-card-title">Downloadable Report</div>
+            <button class="btn-outline-sm batch-download-report-btn" type="button" data-index="${index}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Download Report
+            </button>
+          </div>`;
 
         return `
           <tr id="batchDetail-${index}" class="batch-detail-row hidden">
@@ -3442,6 +3668,7 @@
                   ${questionsHtml}
                   ${resumeHtml}
                   ${sendEmailHtml}
+                  ${downloadReportHtml}
                 </div>
               </div>
             </td>
@@ -3504,12 +3731,27 @@
         }).join('');
 
         batchResults.innerHTML = `
+          <div class="batch-toolbar">
+            <button id="batchDownloadAllBtn" class="btn-outline-sm" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Download All Reports
+            </button>
+          </div>
           <div class="batch-table-wrap">
             <table class="batch-table">
               <thead><tr><th>Rank</th><th>Candidate</th><th>Match Score</th><th>Routing</th><th>Matched</th><th>Missing</th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>`;
+
+        const batchDownloadAllBtn = document.getElementById('batchDownloadAllBtn');
+        if (batchDownloadAllBtn) {
+          batchDownloadAllBtn.addEventListener('click', () => downloadBatchReport(results));
+        }
 
         batchResults.querySelectorAll('.batch-result-row').forEach(row => {
           const toggle = () => {
@@ -3559,6 +3801,14 @@
               candidateEmail: btn.dataset.candidateEmail || null,
               jobTitle: currentBatchJobTitle
             });
+          });
+        });
+
+        batchResults.querySelectorAll('.batch-download-report-btn').forEach(btn => {
+          btn.addEventListener('click', event => {
+            event.stopPropagation();
+            const item = results[Number(btn.dataset.index)];
+            if (item) downloadBatchReport([item]);
           });
         });
       }

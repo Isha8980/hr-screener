@@ -6,6 +6,7 @@ from app.dashboard import (
     AVG_RECRUITER_HOURLY_COST_INR,
     CANDIDATE_STORE,
     JOB_STORE,
+    MAX_BATCH_SIZE,
     QUEUE_STORE,
     VALID_TOKENS,
     app,
@@ -176,3 +177,44 @@ def test_batch_evaluate_includes_time_and_cost_savings_summary(client, mocked_ba
 
     assert isinstance(summary["actual_processing_seconds"], (int, float))
     assert summary["actual_processing_seconds"] >= 0
+
+
+def test_batch_evaluate_rejects_batch_exceeding_max_size(client, mocked_batch_pipeline):
+    job_id = create_job(client)
+    token = "batch-test-token"
+    VALID_TOKENS.add(token)
+
+    file_count = MAX_BATCH_SIZE + 1
+    files = [("files", (f"resume_{i}.txt", b"Ben resume", "text/plain")) for i in range(file_count)]
+
+    response = client.post(
+        "/batch-evaluate",
+        data={"job_id": job_id},
+        files=files,
+        headers={"X-Recruiter-Token": token},
+    )
+
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert str(file_count) in detail
+    assert str(MAX_BATCH_SIZE) in detail
+
+
+def test_batch_evaluate_allows_batch_at_max_size(client, mocked_batch_pipeline):
+    job_id = create_job(client)
+    token = "batch-test-token"
+    VALID_TOKENS.add(token)
+
+    files = [("files", (f"resume_{i}.txt", b"Ben resume", "text/plain")) for i in range(MAX_BATCH_SIZE)]
+
+    response = client.post(
+        "/batch-evaluate",
+        data={"job_id": job_id},
+        files=files,
+        headers={"X-Recruiter-Token": token},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["results"]) == MAX_BATCH_SIZE
+    assert payload["summary"]["candidates_screened"] == MAX_BATCH_SIZE
